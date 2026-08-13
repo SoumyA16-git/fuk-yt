@@ -3,6 +3,8 @@ package router
 import (
 	"bytes"
 	"fmt"
+	"image/jpeg"
+	"image/png"
 	"io"
 	"net/http"
 	"os"
@@ -205,7 +207,7 @@ func (r *Router) handleDownloadThumbnail(msg *host.RawMessage) error {
 		safeName = "Thumbnail_" + payload.VideoID
 	}
 
-	destPath := filepath.Join(downloadsDir, safeName+".jpg")
+	destPath := filepath.Join(downloadsDir, safeName+".png")
 
 	urls := []string{
 		fmt.Sprintf("https://img.youtube.com/vi/%s/maxresdefault.jpg", payload.VideoID),
@@ -220,9 +222,16 @@ func (r *Router) handleDownloadThumbnail(msg *host.RawMessage) error {
 			buf, err := io.ReadAll(resp.Body)
 			resp.Body.Close()
 			if err == nil && len(buf) > 5000 {
-				_ = os.WriteFile(destPath, buf, 0644)
-				downloaded = true
-				break
+				img, err := jpeg.Decode(bytes.NewReader(buf))
+				if err == nil {
+					pngFile, err := os.Create(destPath)
+					if err == nil {
+						png.Encode(pngFile, img)
+						pngFile.Close()
+						downloaded = true
+						break
+					}
+				}
 			}
 		} else if resp != nil && resp.Body != nil {
 			resp.Body.Close()
