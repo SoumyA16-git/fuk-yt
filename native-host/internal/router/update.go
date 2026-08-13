@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/fukyt/host/internal/host"
@@ -66,9 +67,8 @@ func (r *Router) handleTriggerUpdate(msg *host.RawMessage) error {
 timeout /t 1 /nobreak > NUL
 del /f /q "%s"
 ren "%s.new" "%s"
-start "" "%s"
 del "%%~f0" & exit
-`, exeName, exeName, exeName, exeName)
+`, exeName, exeName, exeName)
 
 	err = os.WriteFile(updaterBatPath, []byte(batContent), 0755)
 	if err != nil {
@@ -85,6 +85,10 @@ del "%%~f0" & exit
 	logging.Info("updater: launching updater.bat detached", nil)
 	cmd := exec.Command("cmd", "/c", updaterBatPath)
 	cmd.Dir = exeDir
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow:    true,
+		CreationFlags: 0x08000000, // CREATE_NO_WINDOW
+	}
 	err = cmd.Start()
 	if err != nil {
 		// Cleanup if starting batch file failed

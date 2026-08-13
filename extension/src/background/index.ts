@@ -219,6 +219,11 @@ async function handleMessage(message: { type: string; payload?: unknown }): Prom
       return null;
     }
 
+    case 'OPEN_EXTENSIONS_PAGE': {
+      await chrome.tabs.create({ url: `chrome://extensions/?id=${chrome.runtime.id}` });
+      return null;
+    }
+
     default:
       throw new Error(`Unknown message type: ${type}`);
   }
@@ -241,7 +246,7 @@ async function registerBrowserDownload(filepath: string, jobType: string) {
     chrome.downloads.download({
       url: fileUrl,
       filename: relPath,
-      conflictAction: 'uniquify',
+      conflictAction: 'overwrite',
       saveAs: false,
     });
   } catch (err) {

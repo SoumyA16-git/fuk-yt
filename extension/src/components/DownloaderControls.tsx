@@ -46,6 +46,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
   const [starsCount, setStarsCount] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('video');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [fileAccessAllowed, setFileAccessAllowed] = useState(true);
 
   async function handleUpdateEngine() {
     if (isUpdating) return;
@@ -98,6 +99,12 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
       }
     }
     fetchGitHubStats();
+
+    if (typeof chrome !== 'undefined' && chrome.extension?.isAllowedFileSchemeAccess) {
+      chrome.extension.isAllowedFileSchemeAccess((allowed) => {
+        setFileAccessAllowed(allowed);
+      });
+    }
   }, []);
 
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
@@ -381,6 +388,46 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                     ) : (
                       <span>Update Now</span>
                     )}
+                  </button>
+                </div>
+              )}
+              {!fileAccessAllowed && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    background: 'rgba(52, 152, 219, 0.1)',
+                    border: '1px solid rgba(52, 152, 219, 0.3)',
+                    marginBottom: 12,
+                    fontSize: 12,
+                    color: '#3498db',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 14 }}>💡</span>
+                    <span>
+                      Enable <strong>"Allow access to file URLs"</strong> in Chrome settings to view downloads in history.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      chrome.runtime.sendMessage({ type: 'OPEN_EXTENSIONS_PAGE' });
+                    }}
+                    style={{
+                      background: '#3498db',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '4px 12px',
+                      borderRadius: 12,
+                      fontSize: 10,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Configure
                   </button>
                 </div>
               )}

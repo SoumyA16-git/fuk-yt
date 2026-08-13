@@ -83,8 +83,18 @@ func loadConfig() (*Config, error) {
 	if localData == "" {
 		localData = filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Local")
 	}
+	userProfile := os.Getenv("USERPROFILE")
+	if userProfile == "" {
+		userProfile = os.Getenv("HOMEPATH")
+	}
+	downloadsDir := filepath.Join(userProfile, "Downloads")
+	var downloadRoot string
+	if _, err := os.Stat(downloadsDir); err == nil {
+		downloadRoot = filepath.Join(downloadsDir, "FUK-YT")
+	} else {
+		downloadRoot = filepath.Join(localData, "FUK-YT", "staging")
+	}
 	appDir := filepath.Join(localData, "FUK-YT")
-	downloadRoot := filepath.Join(appDir, "staging")
 
 	return &Config{
 		InstallDir:   installDir,
