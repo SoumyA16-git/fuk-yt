@@ -27,7 +27,7 @@
 ---
 
 ### 🎨 In-Page Downloader Bar
-![YouTube In-Page Downloader Bar](YOUR_CONTROL_BAR_IMAGE_URL_HERE)
+![YouTube In-Page Downloader Bar](https://i.ibb.co/236dcmHY/image.png)
 
 ---
 
