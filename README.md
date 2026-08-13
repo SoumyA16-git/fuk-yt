@@ -159,15 +159,18 @@ npm run build
 
 ---
 
-## 📁 File Output Location
+## 📁 File Output Location & Storage
 
-All downloaded files are organized in your local Downloads folder under:
+All downloaded files are saved directly as **single clean copies** (no duplicate files created) in your local Downloads folder under:
+
 ```
 %USERPROFILE%\Downloads\FUK-YT\
-├── Videos/    # Video downloads (.mp4 / .mkv)
-├── Audio/     # Audio extractions (.mp3 / .m4a)
-└── Clips/     # Trimmed clips (.mp4 / .mp3)
+├── Videos/    # Full video downloads (.mp4 / .mkv) with quality tags
+├── Audio/     # Audio extractions (.mp3 / .m4a) with bitrate tags
+└── Clips/     # Trimmed video & audio clips (.mp4 / .mp3)
 ```
+
+> 💡 **Instant File Access**: Once a download completes, click **Open File** or **Open Folder** directly on the Fuk-YT progress card to instantly open your file or reveal it in Windows File Explorer!
 
 ---
 
