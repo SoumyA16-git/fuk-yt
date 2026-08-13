@@ -37,6 +37,14 @@ type Manager struct {
 
 // New creates a FileManager with the given download root.
 func New(downloadRoot string) *Manager {
+	if downloadRoot == "" || strings.Contains(downloadRoot, "staging") {
+		if home, err := os.UserHomeDir(); err == nil && home != "" {
+			downloadRoot = filepath.Join(home, "Downloads")
+		} else {
+			downloadRoot = filepath.Join(os.Getenv("USERPROFILE"), "Downloads")
+		}
+	}
+	_ = os.MkdirAll(downloadRoot, 0755)
 	return &Manager{downloadRoot: downloadRoot}
 }
 

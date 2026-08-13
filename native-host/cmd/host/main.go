@@ -213,6 +213,23 @@ func run(cfg *Config) error {
 		_ = os.Remove(filepath.Join(filepath.Dir(exePath), "updater.bat"))
 	}
 
+	// Migrate any previous files from staging directory to user's real Downloads folder
+	localData := os.Getenv("LOCALAPPDATA")
+	if localData == "" {
+		localData = filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Local")
+	}
+	stagingDir := filepath.Join(localData, "FUK-YT", "staging")
+	if _, err := os.Stat(stagingDir); err == nil {
+		_ = filepath.Walk(stagingDir, func(path string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() {
+				dest := filepath.Join(cfg.DownloadRoot, info.Name())
+				_ = os.Rename(path, dest)
+			}
+			return nil
+		})
+		_ = os.RemoveAll(stagingDir)
+	}
+
 	ytSvc := ytdlp.New(cfg.YtDlpPath, pm)
 	ffSvc := ffmpeg.New(cfg.FFmpegPath, cfg.FFprobePath, pm)
 	dlSvc := download.New(ytSvc, ffSvc, fm)

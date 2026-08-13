@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Film, Music, Scissors, Star, Image, Sparkles, Loader2 } from 'lucide-react';
+import { Film, Music, Scissors, Star, Image, Loader2 } from 'lucide-react';
 import type { EngineInfo, FormatInfo, VideoInfo, Job, JobState } from '@/types';
 import { NativeClient } from '@/services/nativeClient';
 import { EngineStatusPanel } from './EngineStatus';
@@ -379,10 +379,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                   <span>Updating...</span>
                 </>
               ) : (
-                <>
-                  <Sparkles size={12} />
-                  <span>Update to {githubVersion}</span>
-                </>
+                <span>Update to {githubVersion}</span>
               )}
             </button>
           )}

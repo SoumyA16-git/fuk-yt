@@ -107,25 +107,42 @@ const lightTokens: ThemeTokens = {
 function getYouTubeTheme(): ThemeMode {
   if (typeof document === 'undefined') return 'dark';
   
-  // 1. Check YouTube HTML dark attribute (desktop YT sets <html dark="true"> or <html dark>)
   const html = document.documentElement;
+
+  // 1. Explicit dark attribute on <html>: YouTube sets <html dark="true"> or <html dark>
   if (html.hasAttribute('dark')) {
     const attr = html.getAttribute('dark');
     if (attr === 'false') return 'light';
     return 'dark';
   }
 
-  // 2. Check <ytd-app> dark attribute or class
+  // 2. Explicit dark attribute on <ytd-app>
   const ytdApp = document.querySelector('ytd-app');
   if (ytdApp && ytdApp.hasAttribute('dark')) {
+    const attr = ytdApp.getAttribute('dark');
+    if (attr === 'false') return 'light';
     return 'dark';
   }
 
-  // 3. Check system media query fallback
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
+  // 3. Inspect YouTube CSS background / computed style on body
+  try {
+    const body = document.body;
+    if (body) {
+      const bg = window.getComputedStyle(body).backgroundColor;
+      if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
+        const rgb = bg.match(/\d+/g);
+        if (rgb && rgb.length >= 3) {
+          const [r, g, b] = rgb.map(Number);
+          const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+          return luminance < 128 ? 'dark' : 'light';
+        }
+      }
+    }
+  } catch {
+    // ignore
   }
 
+  // 4. Default: When YouTube removes the 'dark' attribute, YouTube is in Light theme!
   return 'light';
 }
 
@@ -135,50 +152,56 @@ export function useTheme(): ThemeTokens {
   useEffect(() => {
     const updateTheme = () => {
       const current = getYouTubeTheme();
-      setTheme(current);
+      setTheme((prev) => (prev !== current ? current : prev));
     };
 
     // Initial sync
     updateTheme();
 
-    // 1. Observe changes to <html> attributes (YouTube toggles 'dark' attribute when Appearance changes)
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        if (
-          mutation.type === 'attributes' &&
-          (mutation.attributeName === 'dark' || mutation.attributeName === 'class' || mutation.attributeName === 'style')
-        ) {
-          updateTheme();
-          break;
-        }
-      }
-    });
-
-    observer.observe(document.documentElement, {
+    // 1. Observe changes to <html> attributes (YouTube toggles 'dark' attribute on Appearance change)
+    const htmlObserver = new MutationObserver(updateTheme);
+    htmlObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['dark', 'class', 'style'],
     });
 
-    // 2. Observe <ytd-app> if present
+    // 2. Observe <body> attributes & styles
+    let bodyObserver: MutationObserver | null = null;
+    if (document.body) {
+      bodyObserver = new MutationObserver(updateTheme);
+      bodyObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'dark'],
+      });
+    }
+
+    // 3. Observe <ytd-app>
     const ytdApp = document.querySelector('ytd-app');
     let ytdObserver: MutationObserver | null = null;
     if (ytdApp) {
       ytdObserver = new MutationObserver(updateTheme);
       ytdObserver.observe(ytdApp, {
         attributes: true,
-        attributeFilter: ['dark', 'class'],
+        attributeFilter: ['dark', 'class', 'style'],
       });
     }
 
-    // 3. Listen to system color scheme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleMediaChange = () => updateTheme();
-    mediaQuery.addEventListener?.('change', handleMediaChange);
+    // 4. YouTube custom navigation/action events
+    window.addEventListener('yt-action', updateTheme);
+    window.addEventListener('yt-navigate-finish', updateTheme);
+    window.addEventListener('yt-page-data-updated', updateTheme);
+
+    // 5. Periodic heartbeat fallback (every 800ms) for instantaneous UI sync
+    const interval = setInterval(updateTheme, 800);
 
     return () => {
-      observer.disconnect();
+      htmlObserver.disconnect();
+      if (bodyObserver) bodyObserver.disconnect();
       if (ytdObserver) ytdObserver.disconnect();
-      mediaQuery.removeEventListener?.('change', handleMediaChange);
+      window.removeEventListener('yt-action', updateTheme);
+      window.removeEventListener('yt-navigate-finish', updateTheme);
+      window.removeEventListener('yt-page-data-updated', updateTheme);
+      clearInterval(interval);
     };
   }, []);
 
