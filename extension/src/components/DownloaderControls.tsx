@@ -332,7 +332,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                 background: engineReady ? '#22c55e' : '#ef4444',
               }}
             />
-            <span>{engineReady ? `Engine Ready · ${githubVersion}` : 'Engine Offline'}</span>
+            <span>{engineReady ? `Engine Ready · ${engineInfo?.version ? (engineInfo.version.startsWith('v') ? engineInfo.version : 'v' + engineInfo.version) : ''}` : 'Engine Offline'}</span>
           </div>
         </div>
       </div>
@@ -344,7 +344,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             <EngineStatusPanel onReady={(info) => { setEngineReady(true); setEngineInfo(info); }} />
           ) : (
             <>
-              {engineReady && engineInfo && githubVersion && engineInfo.version !== githubVersion && (
+              {engineReady && engineInfo && githubVersion && engineInfo.version.replace(/^v/, '') !== githubVersion.replace(/^v/, '') && (
                 <div
                   style={{
                     display: 'flex',

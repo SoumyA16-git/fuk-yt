@@ -64,11 +64,23 @@ func (r *Router) handleTriggerUpdate(msg *host.RawMessage) error {
 	// 2. Create updater.bat
 	logging.Info("updater: creating Windows batch script updater", map[string]interface{}{"path": updaterBatPath})
 	batContent := fmt.Sprintf(`@echo off
+setlocal enabledelayedexpansion
 timeout /t 1 /nobreak > NUL
-del /f /q "%s"
-ren "%s.new" "%s"
+set retry=0
+:loop
+if exist "%s" (
+    del /f /q "%s" > NUL 2>&1
+    if errorlevel 1 (
+        set /a retry+=1
+        if !retry! LSS 5 (
+            timeout /t 1 /nobreak > NUL
+            goto loop
+        )
+    )
+)
+ren "%s" "%s"
 del "%%~f0" & exit
-`, exeName, exeName, exeName)
+`, exePath, exePath, newExePath, exeName)
 
 	err = os.WriteFile(updaterBatPath, []byte(batContent), 0755)
 	if err != nil {
