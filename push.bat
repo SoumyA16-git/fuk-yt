@@ -24,10 +24,13 @@ cd ..
 echo Zipping extension dist folder...
 powershell -NoProfile -Command "Compress-Archive -Path extension\dist\* -DestinationPath fuk-yt-extension.zip -Force"
 
+set "GO_PATH=C:\Program Files\Go\bin\go.exe"
+if not exist "%GO_PATH%" set "GO_PATH=go"
+
 echo.
 echo [2/6] Building Go Native Host Engine...
 cd native-host
-go build -ldflags="-s -w" -o bin\native-host.exe .\cmd\host
+"%GO_PATH%" build -ldflags="-s -w" -o bin\native-host.exe .\cmd\host
 if errorlevel 1 (
     echo ERROR: Native host build failed.
     pause
