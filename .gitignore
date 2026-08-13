@@ -2,7 +2,7 @@
 node_modules/
 
 # Extension Build output
-extension/dist/
+# (User requested to commit dist folder)
 
 # Logs & Temp files
 *.log

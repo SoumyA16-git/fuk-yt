@@ -2,8 +2,6 @@ package router
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,73 +30,37 @@ func (r *Router) handleTriggerUpdate(msg *host.RawMessage) error {
 		return r.h.SendError(msg.RequestID, "UPDATE_FAILED", "Could not find host executable path: "+err.Error())
 	}
 	exeDir := filepath.Dir(exePath)
-	exeName := filepath.Base(exePath)
 
-	newExePath := exePath + ".new"
 	updaterBatPath := filepath.Join(exeDir, "updater.bat")
 
-	// 1. Download the new binary from URL
-	logging.Info("updater: downloading new binary", map[string]interface{}{"url": payload.DownloadURL})
-	resp, err := http.Get(payload.DownloadURL)
-	if err != nil {
-		return r.h.SendError(msg.RequestID, "DOWNLOAD_FAILED", "Failed to request download URL: "+err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return r.h.SendError(msg.RequestID, "DOWNLOAD_FAILED", fmt.Sprintf("Download failed with HTTP %d", resp.StatusCode))
-	}
-
-	out, err := os.Create(newExePath)
-	if err != nil {
-		return r.h.SendError(msg.RequestID, "FILE_WRITE_FAILED", "Failed to create staging file: "+err.Error())
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return r.h.SendError(msg.RequestID, "DOWNLOAD_INCOMPLETE", "Failed to save download stream: "+err.Error())
-	}
-	out.Close() // Close before renaming/operating
-
-	// 2. Create updater.bat
+	// 1. Create updater.bat to run git pull
 	logging.Info("updater: creating Windows batch script updater", map[string]interface{}{"path": updaterBatPath})
 	batContent := fmt.Sprintf(`@echo off
 setlocal enabledelayedexpansion
 echo [%%date%% %%time%%] Updater started > updater.log
-set "EXE_PATH=%s"
-set "NEW_PATH=%s"
-set "EXE_NAME=%s"
-set "OLD_PATH=%s.old"
 
-timeout /t 1 /nobreak > NUL
+:: Go to the repository root (two directories up from native-host\bin)
+cd /d "%%~dp0..\.."
 
-if exist "!OLD_PATH!" del /f /q "!OLD_PATH!" > NUL 2>&1
-echo [%%date%% %%time%%] Renaming active binary to .old >> updater.log
-ren "!EXE_PATH!" "!EXE_NAME!.old" >> updater.log 2>&1
+echo [%%date%% %%time%%] Running git pull >> "%s\updater.log"
+git pull >> "%s\updater.log" 2>&1
 
-echo [%%date%% %%time%%] Renaming new binary to !EXE_NAME! >> updater.log
-ren "!NEW_PATH!" "!EXE_NAME!" >> updater.log 2>&1
-
-timeout /t 1 /nobreak > NUL
-if exist "!OLD_PATH!" del /f /q "!OLD_PATH!" > NUL 2>&1
-
-echo [%%date%% %%time%%] Finished >> updater.log
+echo [%%date%% %%time%%] Finished >> "%s\updater.log"
 del "%%~f0" & exit
-`, exePath, newExePath, exeName, exePath)
+`, exeDir, exeDir, exeDir)
 
 	err = os.WriteFile(updaterBatPath, []byte(batContent), 0755)
 	if err != nil {
 		return r.h.SendError(msg.RequestID, "UPDATER_SCRIPT_FAILED", "Failed to write updater script: "+err.Error())
 	}
 
-	// 3. Send success response before process exits
+	// 2. Send success response before process exits
 	err = r.h.SendResponse(msg.RequestID, map[string]bool{"updating": true})
 	if err != nil {
 		logging.Warn("updater: failed to send response to extension: " + err.Error())
 	}
 
-	// 4. Start updater.bat detached and exit immediately
+	// 3. Start updater.bat detached and exit immediately
 	logging.Info("updater: launching updater.bat detached", nil)
 	cmd := exec.Command("cmd", "/c", "updater.bat")
 	cmd.Dir = exeDir
@@ -108,8 +70,6 @@ del "%%~f0" & exit
 	}
 	err = cmd.Start()
 	if err != nil {
-		// Cleanup if starting batch file failed
-		_ = os.Remove(newExePath)
 		_ = os.Remove(updaterBatPath)
 		return r.h.SendError(msg.RequestID, "UPDATER_LAUNCH_FAILED", "Failed to start updater script: "+err.Error())
 	}
