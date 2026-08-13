@@ -25,6 +25,7 @@ if errorlevel 1 (
 cd ..
 
 echo Zipping extension dist folder...
+if exist fuk-yt-extension.zip del /f /q fuk-yt-extension.zip
 powershell -NoProfile -Command "Compress-Archive -Path extension\dist\* -DestinationPath fuk-yt-extension.zip -Force"
 
 echo.
@@ -39,6 +40,7 @@ if errorlevel 1 (
 cd ..
 
 echo Zipping native host engine package (including bundled yt-dlp and FFmpeg)...
+if exist fuk-yt-engine-windows.zip del /f /q fuk-yt-engine-windows.zip
 powershell -NoProfile -Command "Compress-Archive -Path native-host\bin\*, install.bat, native-host\com.fukyt.host.json -DestinationPath fuk-yt-engine-windows.zip -Force"
 
 echo.
