@@ -100,9 +100,11 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
     }
     fetchGitHubStats();
 
-    if (typeof chrome !== 'undefined' && chrome.extension?.isAllowedFileSchemeAccess) {
-      chrome.extension.isAllowedFileSchemeAccess((allowed) => {
-        setFileAccessAllowed(allowed);
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ type: 'CHECK_FILE_ACCESS' }, (res) => {
+        if (res?.success && typeof res.data === 'boolean') {
+          setFileAccessAllowed(res.data);
+        }
       });
     }
   }, []);

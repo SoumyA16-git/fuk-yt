@@ -224,6 +224,14 @@ async function handleMessage(message: { type: string; payload?: unknown }): Prom
       return null;
     }
 
+    case 'CHECK_FILE_ACCESS': {
+      return new Promise<boolean>((resolve) => {
+        chrome.extension.isAllowedFileSchemeAccess((allowed) => {
+          resolve(allowed);
+        });
+      });
+    }
+
     default:
       throw new Error(`Unknown message type: ${type}`);
   }

@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -11,6 +12,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/fukyt/host/internal/download"
@@ -87,12 +90,20 @@ func loadConfig() (*Config, error) {
 	if userProfile == "" {
 		userProfile = os.Getenv("HOMEPATH")
 	}
-	downloadsDir := filepath.Join(userProfile, "Downloads")
+
 	var downloadRoot string
-	if _, err := os.Stat(downloadsDir); err == nil {
-		downloadRoot = filepath.Join(downloadsDir, "FUK-YT")
-	} else {
-		downloadRoot = filepath.Join(localData, "FUK-YT", "staging")
+	if runtime.GOOS == "windows" {
+		if dDir, err := getWindowsDownloadsDir(); err == nil && dDir != "" {
+			downloadRoot = filepath.Join(dDir, "FUK-YT")
+		}
+	}
+	if downloadRoot == "" {
+		downloadsDir := filepath.Join(userProfile, "Downloads")
+		if _, err := os.Stat(downloadsDir); err == nil {
+			downloadRoot = filepath.Join(downloadsDir, "FUK-YT")
+		} else {
+			downloadRoot = filepath.Join(localData, "FUK-YT", "staging")
+		}
 	}
 	appDir := filepath.Join(localData, "FUK-YT")
 
@@ -105,6 +116,51 @@ func loadConfig() (*Config, error) {
 		LogDir:       filepath.Join(appDir, "logs"),
 		TempDir:      filepath.Join(appDir, "temp"),
 	}, nil
+}
+
+func getWindowsDownloadsDir() (string, error) {
+	cmd := exec.Command("reg", "query", `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "/v", "{374DE290-123F-4565-9164-39C4925E467B}")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow:    true,
+		CreationFlags: 0x08000000, // CREATE_NO_WINDOW
+	}
+	err := cmd.Run()
+	if err != nil {
+		cmd = exec.Command("reg", "query", `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "/v", "{7512513A-2193-4A2C-AE4F-D8E3E14747ED}")
+		out.Reset()
+		cmd.Stdout = &out
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			HideWindow:    true,
+			CreationFlags: 0x08000000,
+		}
+		if err2 := cmd.Run(); err2 != nil {
+			return "", err2
+		}
+	}
+
+	lines := strings.Split(out.String(), "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "REG_EXPAND_SZ") || strings.Contains(line, "REG_SZ") {
+			parts := strings.SplitN(strings.TrimSpace(line), "REG_EXPAND_SZ", 2)
+			if len(parts) < 2 {
+				parts = strings.SplitN(strings.TrimSpace(line), "REG_SZ", 2)
+			}
+			if len(parts) >= 2 {
+				path := strings.TrimSpace(parts[1])
+				// Expand %USERPROFILE% manually if present
+				if strings.Contains(path, "%USERPROFILE%") {
+					path = strings.ReplaceAll(path, "%USERPROFILE%", os.Getenv("USERPROFILE"))
+				}
+				if strings.Contains(path, "%") {
+					path = os.ExpandEnv(path)
+				}
+				return path, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("reg query: could not parse path")
 }
 
 func findBinary(installDir, binName string) string {
