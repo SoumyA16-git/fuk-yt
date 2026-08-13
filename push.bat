@@ -11,6 +11,9 @@ echo.
 set "GH_PATH=C:\Program Files\GitHub CLI\gh.exe"
 if not exist "%GH_PATH%" set "GH_PATH=gh"
 
+set "GO_PATH=C:\Program Files\Go\bin\go.exe"
+if not exist "%GO_PATH%" set "GO_PATH=go"
+
 echo [1/6] Building Chrome Extension dist package...
 cd extension
 call npm run build
@@ -23,9 +26,6 @@ cd ..
 
 echo Zipping extension dist folder...
 powershell -NoProfile -Command "Compress-Archive -Path extension\dist\* -DestinationPath fuk-yt-extension.zip -Force"
-
-set "GO_PATH=C:\Program Files\Go\bin\go.exe"
-if not exist "%GO_PATH%" set "GO_PATH=go"
 
 echo.
 echo [2/6] Building Go Native Host Engine...
@@ -61,11 +61,11 @@ git push -u origin main
 echo.
 echo [6/6] Creating Auto-Version Tag and Uploading Release Files to GitHub...
 
-for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "$t = (git describe --tags --abbrev=0 2>$null); if (-not $t) { $t = 'v0.2.0' }; $parts = ($t -replace '^v','').Split('.'); [int]$patch = [int]$parts[2] + 1; Write-Output ('v' + $parts[0] + '.' + $parts[1] + '.' + $patch)"`) do (
+for /f "usebackq tokens=*" %%i in (`powershell -ExecutionPolicy Bypass -File .\scripts\get-next-tag.ps1`) do (
     set "NEW_TAG=%%i"
 )
 
-if "%NEW_TAG%"=="" set "NEW_TAG=v0.2.4"
+if "%NEW_TAG%"=="" set "NEW_TAG=v0.2.5"
 
 echo.
 echo Generated Release Version: !NEW_TAG!
