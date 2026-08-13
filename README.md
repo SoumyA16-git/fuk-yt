@@ -32,7 +32,7 @@
 ---
 
 ### ✂️ Precision Clip Trimmer with Live Frame Seeking
-![Clip Trimming Interface](YOUR_CLIP_TRIMMER_IMAGE_URL_HERE)
+![Clip Trimming Interface](https://i.ibb.co/M53QcPN5/image.png)
 
 ---
 
