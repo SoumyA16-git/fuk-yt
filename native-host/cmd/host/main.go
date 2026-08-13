@@ -28,7 +28,7 @@ import (
 	"github.com/fukyt/host/internal/ytdlp"
 )
 
-var Version = "0.2.0"
+var Version = "v0.2.16"
 
 type Config struct {
 	InstallDir   string
@@ -187,6 +187,12 @@ func run(cfg *Config) error {
 
 	// Clean orphaned temp files from previous session (§20)
 	fm.CleanOrphanedTemp()
+
+	// Clean leftover update binaries/scripts
+	if exePath, err := os.Executable(); err == nil {
+		_ = os.Remove(exePath + ".old")
+		_ = os.Remove(filepath.Join(filepath.Dir(exePath), "updater.bat"))
+	}
 
 	ytSvc := ytdlp.New(cfg.YtDlpPath, pm)
 	ffSvc := ffmpeg.New(cfg.FFmpegPath, cfg.FFprobePath, pm)

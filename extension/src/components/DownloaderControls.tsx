@@ -28,6 +28,19 @@ interface DownloaderControlsProps {
   initialMetadata: VideoMetadataDom | null;
 }
 
+function isNewerVersion(remote: string, local: string): boolean {
+  if (!remote || !local) return false;
+  const r = remote.replace(/^v/, '').split('.').map(Number);
+  const l = local.replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < Math.max(r.length, l.length); i++) {
+    const rv = r[i] || 0;
+    const lv = l[i] || 0;
+    if (rv > lv) return true;
+    if (rv < lv) return false;
+  }
+  return false;
+}
+
 const TAB_BUTTONS: Array<{ id: TabId; label: string; icon: React.ReactNode; ariaLabel: string }> = [
   { id: 'video', label: 'Video', icon: <Film size={14} />, ariaLabel: 'Video download' },
   { id: 'audio', label: 'Audio', icon: <Music size={14} />, ariaLabel: 'Audio download' },
@@ -344,7 +357,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             <EngineStatusPanel onReady={(info) => { setEngineReady(true); setEngineInfo(info); }} />
           ) : (
             <>
-              {engineReady && engineInfo && githubVersion && engineInfo.version.replace(/^v/, '') !== githubVersion.replace(/^v/, '') && (
+              {engineReady && engineInfo && githubVersion && isNewerVersion(githubVersion, engineInfo.version) && (
                 <div
                   style={{
                     display: 'flex',

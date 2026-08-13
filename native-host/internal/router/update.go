@@ -69,26 +69,23 @@ echo [%%date%% %%time%%] Updater started > updater.log
 set "EXE_PATH=%s"
 set "NEW_PATH=%s"
 set "EXE_NAME=%s"
+set "OLD_PATH=%s.old"
 
 timeout /t 1 /nobreak > NUL
-set retry=0
-:loop
-if exist "!EXE_PATH!" (
-    echo [%%date%% %%time%%] Deleting "!EXE_PATH!" (attempt !retry!) >> updater.log
-    del /f /q "!EXE_PATH!" >> updater.log 2>&1
-    if errorlevel 1 (
-        set /a retry+=1
-        if !retry! LSS 5 (
-            timeout /t 1 /nobreak > NUL
-            goto loop
-        )
-    )
-)
-echo [%%date%% %%time%%] Renaming "!NEW_PATH!" to "!EXE_NAME!" >> updater.log
+
+if exist "!OLD_PATH!" del /f /q "!OLD_PATH!" > NUL 2>&1
+echo [%%date%% %%time%%] Renaming active binary to .old >> updater.log
+ren "!EXE_PATH!" "!EXE_NAME!.old" >> updater.log 2>&1
+
+echo [%%date%% %%time%%] Renaming new binary to !EXE_NAME! >> updater.log
 ren "!NEW_PATH!" "!EXE_NAME!" >> updater.log 2>&1
+
+timeout /t 1 /nobreak > NUL
+if exist "!OLD_PATH!" del /f /q "!OLD_PATH!" > NUL 2>&1
+
 echo [%%date%% %%time%%] Finished >> updater.log
 del "%%~f0" & exit
-`, exePath, newExePath, exeName)
+`, exePath, newExePath, exeName, exePath)
 
 	err = os.WriteFile(updaterBatPath, []byte(batContent), 0755)
 	if err != nil {
