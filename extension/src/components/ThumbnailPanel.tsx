@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download, CheckCircle, Loader2 } from 'lucide-react';
 import type { VideoInfo } from '@/types';
+import { NativeClient } from '@/services/nativeClient';
 
 interface ThumbnailPanelProps {
   videoId: string;
@@ -15,17 +16,11 @@ export function ThumbnailPanel({ videoId, videoInfo }: ThumbnailPanelProps) {
   async function handleDownload() {
     setDownloadState('downloading');
     try {
-      const sanitizedTitle = title.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_');
-      const filename = `${sanitizedTitle}.jpg`;
-
-      chrome.runtime.sendMessage({
-        type: 'DOWNLOAD_THUMBNAIL',
-        payload: { videoId, filename }
-      }, (res) => {
-        setDownloadState('complete');
-        setTimeout(() => setDownloadState('idle'), 3000);
-      });
-    } catch {
+      await NativeClient.downloadThumbnail(videoId, title);
+      setDownloadState('complete');
+      setTimeout(() => setDownloadState('idle'), 3000);
+    } catch (err) {
+      console.error('[ThumbnailPanel] Download failed:', err);
       setDownloadState('idle');
     }
   }

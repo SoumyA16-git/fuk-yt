@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/fukyt/host/internal/files"
 	"github.com/fukyt/host/internal/host"
 	"github.com/fukyt/host/internal/logging"
 )
@@ -147,4 +149,62 @@ func getDownloadsDir() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("reg query: could not parse path")
+}
+
+func (r *Router) handleDownloadThumbnail(msg *host.RawMessage) error {
+	var payload struct {
+		VideoID string `json:"videoId"`
+		Title   string `json:"title"`
+	}
+	if err := parsePayload(msg.Payload, &payload); err != nil {
+		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", err.Error())
+	}
+	if payload.VideoID == "" {
+		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", "videoId is required")
+	}
+
+	downloadsDir, err := getDownloadsDir()
+	if err != nil || downloadsDir == "" {
+		downloadsDir = filepath.Join(os.Getenv("USERPROFILE"), "Downloads")
+	}
+
+	title := payload.Title
+	if title == "" {
+		title = "Thumbnail_" + payload.VideoID
+	}
+	safeName, err := files.SanitizeFilename(title)
+	if err != nil || safeName == "" {
+		safeName = "Thumbnail_" + payload.VideoID
+	}
+
+	destPath := filepath.Join(downloadsDir, safeName+".jpg")
+
+	urls := []string{
+		fmt.Sprintf("https://img.youtube.com/vi/%s/maxresdefault.jpg", payload.VideoID),
+		fmt.Sprintf("https://img.youtube.com/vi/%s/sddefault.jpg", payload.VideoID),
+		fmt.Sprintf("https://img.youtube.com/vi/%s/hqdefault.jpg", payload.VideoID),
+	}
+
+	var downloaded bool
+	for _, u := range urls {
+		resp, err := http.Get(u)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			buf, err := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if err == nil && len(buf) > 5000 {
+				_ = os.WriteFile(destPath, buf, 0644)
+				downloaded = true
+				break
+			}
+		} else if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+	}
+
+	if !downloaded {
+		return r.h.SendError(msg.RequestID, "THUMBNAIL_FAILED", "Could not fetch high resolution thumbnail")
+	}
+
+	logging.Info("fileops: thumbnail saved successfully", map[string]interface{}{"path": destPath})
+	return r.h.SendResponse(msg.RequestID, map[string]string{"filepath": destPath})
 }

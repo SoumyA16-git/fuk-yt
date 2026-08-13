@@ -125,4 +125,9 @@ export const NativeClient = {
   async triggerUpdate(downloadUrl: string): Promise<void> {
     await sendNative('triggerUpdate', { downloadUrl });
   },
+
+  /** downloadThumbnail */
+  async downloadThumbnail(videoId: string, title: string): Promise<{ filepath: string }> {
+    return sendNative<{ filepath: string }>('downloadThumbnail', { videoId, title });
+  },
 };

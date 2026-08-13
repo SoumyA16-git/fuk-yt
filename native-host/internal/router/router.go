@@ -82,6 +82,9 @@ func (r *Router) Dispatch(msg *host.RawMessage) {
 	case "deleteFile":
 		err = r.handleDeleteFile(msg)
 
+	case "downloadThumbnail":
+		err = r.handleDownloadThumbnail(msg)
+
 	case "triggerUpdate":
 		err = r.handleTriggerUpdate(msg)
 
@@ -315,5 +318,5 @@ func openFileCmd(path string) {
 }
 
 func openFolderCmd(path string) {
-	_ = exec.Command("explorer", "/select,"+path).Start()
+	_ = exec.Command("cmd", "/c", fmt.Sprintf(`explorer /select,"%s"`, path)).Start()
 }
