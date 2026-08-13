@@ -65,11 +65,13 @@ func (r *Router) handleTriggerUpdate(msg *host.RawMessage) error {
 	logging.Info("updater: creating Windows batch script updater", map[string]interface{}{"path": updaterBatPath})
 	batContent := fmt.Sprintf(`@echo off
 setlocal enabledelayedexpansion
+echo [%%date%% %%time%%] Updater started > updater.log
 timeout /t 1 /nobreak > NUL
 set retry=0
 :loop
 if exist "%s" (
-    del /f /q "%s" > NUL 2>&1
+    echo [%%date%% %%time%%] Deleting "%s" (attempt !retry!) >> updater.log
+    del /f /q "%s" >> updater.log 2>&1
     if errorlevel 1 (
         set /a retry+=1
         if !retry! LSS 5 (
@@ -78,9 +80,11 @@ if exist "%s" (
         )
     )
 )
-ren "%s" "%s"
+echo [%%date%% %%time%%] Renaming "%s" to "%s" >> updater.log
+ren "%s" "%s" >> updater.log 2>&1
+echo [%%date%% %%time%%] Finished >> updater.log
 del "%%~f0" & exit
-`, exePath, exePath, newExePath, exeName)
+`, exePath, exePath, exePath, newExePath, exeName)
 
 	err = os.WriteFile(updaterBatPath, []byte(batContent), 0755)
 	if err != nil {
@@ -95,7 +99,7 @@ del "%%~f0" & exit
 
 	// 4. Start updater.bat detached and exit immediately
 	logging.Info("updater: launching updater.bat detached", nil)
-	cmd := exec.Command("cmd", "/c", updaterBatPath)
+	cmd := exec.Command("cmd", "/c", "updater.bat")
 	cmd.Dir = exeDir
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		HideWindow:    true,

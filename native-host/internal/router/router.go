@@ -6,7 +6,6 @@ package router
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 
 	"github.com/fukyt/host/internal/ffmpeg"
@@ -253,12 +252,7 @@ func (r *Router) handleOpenFolder(msg *host.RawMessage) error {
 		return r.h.SendError(msg.RequestID, "JOB_NOT_FOUND", "Job not found or no file")
 	}
 
-	dir := job.Filepath
-	if info, statErr := os.Stat(dir); statErr == nil && !info.IsDir() {
-		// Get parent directory
-		dir = fmt.Sprintf("/select,%s", dir)
-	}
-	openFolderCmd(dir)
+	openFolderCmd(job.Filepath)
 	return r.h.SendResponse(msg.RequestID, map[string]bool{"opened": true})
 }
 
