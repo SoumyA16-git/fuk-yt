@@ -74,13 +74,6 @@ func loadConfig() (*Config, error) {
 	}
 	installDir := filepath.Dir(exe)
 
-	// Download root: %USERPROFILE%\Downloads\FUK-YT (§21 default)
-	downloadRoot := filepath.Join(os.Getenv("USERPROFILE"), "Downloads", "FUK-YT")
-	if os.Getenv("USERPROFILE") == "" {
-		home, _ := os.UserHomeDir()
-		downloadRoot = filepath.Join(home, "Downloads", "FUK-YT")
-	}
-
 	binExt := ""
 	if runtime.GOOS == "windows" {
 		binExt = ".exe"
@@ -91,6 +84,7 @@ func loadConfig() (*Config, error) {
 		localData = filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Local")
 	}
 	appDir := filepath.Join(localData, "FUK-YT")
+	downloadRoot := filepath.Join(appDir, "staging")
 
 	return &Config{
 		InstallDir:   installDir,

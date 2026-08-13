@@ -119,7 +119,7 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string) (*VideoInfo, err
 	if err := ValidateYouTubeURL(url); err != nil {
 		return nil, err
 	}
-	out, err := s.runCapture(ctx, "--dump-json", "--no-playlist", "--no-warnings", url)
+	out, err := s.runCapture(ctx, "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5", url)
 	if err != nil {
 		return nil, mapYtdlpError(err)
 	}
@@ -133,7 +133,7 @@ func (s *Service) GetFormats(ctx context.Context, videoID string) ([]FormatInfo,
 		return nil, err
 	}
 	url := VideoIDToURL(videoID)
-	out, err := s.runCapture(ctx, "--dump-json", "--no-playlist", "--no-warnings", url)
+	out, err := s.runCapture(ctx, "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5", url)
 	if err != nil {
 		return nil, mapYtdlpError(err)
 	}
@@ -167,6 +167,9 @@ func (s *Service) Download(
 		"--no-playlist",
 		"--newline", // forces one [download] line per progress update
 		"--no-warnings",
+		"--retries", "10",
+		"--fragment-retries", "10",
+		"--file-access-retries", "10",
 		"-o", opts.OutputPath,
 	}
 

@@ -34,6 +34,12 @@ function connect(): chrome.runtime.Port {
 
     // Unsolicited push events (PRD §18) — broadcast to all YouTube tabs
     if (type === 'jobProgress' || type === 'jobComplete' || type === 'jobError') {
+      if (type === 'jobComplete') {
+        const payload = message.payload as { filepath?: string; jobType?: string } | undefined;
+        if (payload?.filepath) {
+          registerBrowserDownload(payload.filepath, payload.jobType || 'video');
+        }
+      }
       broadcastToTabs({ type: 'NATIVE_PUSH', payload: message });
       return;
     }
@@ -222,9 +228,26 @@ async function handleMessage(message: { type: string; payload?: unknown }): Prom
 // Lifecycle
 // ============================================================
 
-self.addEventListener('install', () => {
-  console.log('[FUK-YT SW] Installed v0.2.0');
-});
+async function registerBrowserDownload(filepath: string, jobType: string) {
+  try {
+    const fileUrl = 'file:///' + filepath.replace(/\\/g, '/');
+    const baseName = filepath.replace(/\\/g, '/').split('/').pop() || 'download';
+    let subfolder = 'Videos';
+    if (jobType === 'audio') subfolder = 'Audio';
+    if (jobType === 'clip') subfolder = 'Clips';
+
+    const relPath = 'FUK-YT/' + subfolder + '/' + baseName;
+
+    chrome.downloads.download({
+      url: fileUrl,
+      filename: relPath,
+      conflictAction: 'uniquify',
+      saveAs: false,
+    });
+  } catch (err) {
+    console.warn('[FUK-YT SW] Browser download registration error:', err);
+  }
+}
 
 self.addEventListener('activate', () => {
   console.log('[FUK-YT SW] Activated');
