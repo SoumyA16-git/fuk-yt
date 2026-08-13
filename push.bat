@@ -1,10 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
-title Fuk-YT - Automated Git Push & Auto-Release
+title Fuk-YT - Automated Git Push and Release
 cd /d "%~dp0"
 
 echo ========================================================
-echo       Fuk-YT - Automated Git Push & Release
+echo       Fuk-YT - Automated Git Push and Release
 echo ========================================================
 echo.
 
@@ -24,7 +24,7 @@ echo.
 echo [3/5] Creating commit...
 git diff --cached --quiet
 if errorlevel 1 (
-    git commit -m "Update: auto-build & release sync"
+    git commit -m "Update: auto-build and release sync"
     if errorlevel 1 (
         echo ERROR: Commit failed.
         pause
@@ -58,14 +58,14 @@ if "%NEW_TAG%"=="" set "NEW_TAG=v0.2.1"
 echo.
 echo Auto-Generated Release Tag: !NEW_TAG!
 echo Creating local tag !NEW_TAG!...
-git tag -a "!NEW_TAG!" -m "Release !NEW_TAG! (Automated Extension & Engine Build)"
+git tag -a "!NEW_TAG!" -m "Release !NEW_TAG! (Automated Extension and Engine Build)"
 
 echo Pushing tag !NEW_TAG! to GitHub...
 git push origin "!NEW_TAG!"
 
 echo.
 echo ========================================================
-echo    PUSH & RELEASE TRIGGER SUCCESSFUL!
+echo    PUSH AND RELEASE TRIGGER SUCCESSFUL!
 echo    Release Tag: !NEW_TAG!
 echo    GitHub Actions is building fuk-yt-extension.zip
 echo    and publishing to GitHub Releases automatically!
