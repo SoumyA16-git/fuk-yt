@@ -6,6 +6,7 @@ package router
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 
 	"github.com/fukyt/host/internal/ffmpeg"
@@ -324,8 +325,12 @@ func openFileCmd(path string) {
 }
 
 func openFolderCmd(path string) {
-	// Pass /select,<path> as a SINGLE argument directly to explorer.exe.
-	// Do NOT go through cmd /c — shell quoting corrupts the argument and
-	// causes Explorer to open the root window instead of selecting the file.
-	_ = exec.Command("explorer.exe", "/select,"+path).Start()
+	// Pass the path via an environment variable so no shell quoting is involved.
+	// Direct /select,<path> or cmd /c approaches all break on filenames with
+	// brackets [ ], spaces, @, or () because Go's exec and cmd.exe double-process
+	// the quoting. PowerShell reads $env:_FUKYT_P directly — zero quoting issues.
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
+		"-Command", `explorer ("/select," + $env:_FUKYT_P)`)
+	cmd.Env = append(os.Environ(), "_FUKYT_P="+path)
+	_ = cmd.Start()
 }

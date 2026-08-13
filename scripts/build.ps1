@@ -95,7 +95,11 @@ if (!$ExtensionOnly) {
         $env:CGO_ENABLED = "0"
 
         Write-Host "  go build..." -ForegroundColor DarkGray
-        go build -ldflags="-s -w" -o "bin\native-host.exe" ".\cmd\host" 2>&1 |
+        # Inject the latest git tag as the version string so local builds
+        # don't show a false "Update available" banner against GitHub releases.
+        $gitTag = (git describe --tags --abbrev=0 2>$null)
+        if (-not $gitTag) { $gitTag = "v0.0.0-dev" }
+        go build -ldflags="-s -w -X main.Version=$gitTag" -o "bin\native-host.exe" ".\cmd\host" 2>&1 |
             ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
 
         if ($LASTEXITCODE -ne 0) { Write-Fail "Native host build failed" }
