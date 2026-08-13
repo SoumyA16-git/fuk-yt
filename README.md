@@ -64,6 +64,11 @@
 - **OS**: Windows 10 or Windows 11 (64-bit)
 - **Browser**: Google Chrome, Brave, Edge, or any Chromium MV3 browser
 - **Pre-built Engine**: No manual building or coding needed! Everything is included in the release package.
+- ⚡ **1-Click Dependency Install via `winget` (Windows Package Manager)**:
+  If setting up development dependencies (Go, Node.js, Git), run in PowerShell or Command Prompt:
+  ```cmd
+  winget install Go.Go.1.22 OpenJS.NodeJS.LTS Git.Git
+  ```
 
 ---
 
