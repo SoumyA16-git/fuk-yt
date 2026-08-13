@@ -76,6 +76,12 @@ func (r *Router) Dispatch(msg *host.RawMessage) {
 	case "openFolder":
 		err = r.handleOpenFolder(msg)
 
+	case "moveToDownloads":
+		err = r.handleMoveToDownloads(msg)
+
+	case "deleteFile":
+		err = r.handleDeleteFile(msg)
+
 	case "triggerUpdate":
 		err = r.handleTriggerUpdate(msg)
 

@@ -24,6 +24,7 @@ import (
 	"github.com/fukyt/host/internal/logging"
 	"github.com/fukyt/host/internal/process"
 	"github.com/fukyt/host/internal/router"
+	"github.com/fukyt/host/internal/server"
 	"github.com/fukyt/host/internal/ytdlp"
 )
 
@@ -91,20 +92,7 @@ func loadConfig() (*Config, error) {
 		userProfile = os.Getenv("HOMEPATH")
 	}
 
-	var downloadRoot string
-	if runtime.GOOS == "windows" {
-		if dDir, err := getWindowsDownloadsDir(); err == nil && dDir != "" {
-			downloadRoot = dDir
-		}
-	}
-	if downloadRoot == "" {
-		downloadsDir := filepath.Join(userProfile, "Downloads")
-		if _, err := os.Stat(downloadsDir); err == nil {
-			downloadRoot = downloadsDir
-		} else {
-			downloadRoot = filepath.Join(localData, "FUK-YT", "staging")
-		}
-	}
+	downloadRoot := filepath.Join(localData, "FUK-YT", "staging")
 	appDir := filepath.Join(localData, "FUK-YT")
 
 	return &Config{
@@ -191,6 +179,11 @@ func run(cfg *Config) error {
 
 	pm := process.New()
 	fm := files.New(cfg.DownloadRoot)
+
+	// Start local HTTP server on loopback to serve staging files to Chrome
+	if _, err := server.Start(cfg.DownloadRoot); err != nil {
+		logging.Warn("main: failed to start local HTTP server: " + err.Error())
+	}
 
 	// Clean orphaned temp files from previous session (§20)
 	fm.CleanOrphanedTemp()

@@ -111,6 +111,16 @@ export const NativeClient = {
     await sendNative('openFolder', { jobId });
   },
 
+  /** moveToDownloads */
+  async moveToDownloads(jobId: string, filepath: string, filename: string): Promise<{ filepath: string }> {
+    return sendNative<{ filepath: string }>('moveToDownloads', { jobId, filepath, filename });
+  },
+
+  /** deleteFile */
+  async deleteFile(filepath: string): Promise<void> {
+    await sendNative('deleteFile', { filepath });
+  },
+
   /** triggerUpdate */
   async triggerUpdate(downloadUrl: string): Promise<void> {
     await sendNative('triggerUpdate', { downloadUrl });

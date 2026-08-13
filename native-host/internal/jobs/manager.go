@@ -5,12 +5,14 @@ package jobs
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/fukyt/host/internal/download"
 	"github.com/fukyt/host/internal/logging"
 	"github.com/fukyt/host/internal/process"
+	"github.com/fukyt/host/internal/server"
 	"github.com/google/uuid"
 )
 
@@ -204,7 +206,15 @@ func (m *Manager) runDownload(ctx context.Context, jobID, videoID, outputType, q
 	job.Filepath = finalPath
 	m.mu.Unlock()
 
-	m.pushFn("jobComplete", jobID, map[string]interface{}{"filepath": finalPath})
+	filename := filepath.Base(finalPath)
+	downloadURL := server.GetDownloadURL(filename)
+
+	m.pushFn("jobComplete", jobID, map[string]interface{}{
+		"filepath":    finalPath,
+		"filename":    filename,
+		"downloadUrl": downloadURL,
+		"jobType":     outputType,
+	})
 }
 
 func (m *Manager) runClip(ctx context.Context, jobID, videoID string, startSec, endSec float64, outputType, quality, format string) {
@@ -242,7 +252,15 @@ func (m *Manager) runClip(ctx context.Context, jobID, videoID string, startSec, 
 	job.Filepath = finalPath
 	m.mu.Unlock()
 
-	m.pushFn("jobComplete", jobID, map[string]interface{}{"filepath": finalPath})
+	filename := filepath.Base(finalPath)
+	downloadURL := server.GetDownloadURL(filename)
+
+	m.pushFn("jobComplete", jobID, map[string]interface{}{
+		"filepath":    finalPath,
+		"filename":    filename,
+		"downloadUrl": downloadURL,
+		"jobType":     outputType,
+	})
 }
 
 // ============================================================
@@ -309,5 +327,14 @@ func friendlyError(code string) string {
 		return "This page isn't a supported YouTube video."
 	default:
 		return "Couldn't fetch this video."
+	}
+}
+
+// UpdateJobFilepath updates the resolved filepath for a job.
+func (m *Manager) UpdateJobFilepath(jobID, filepath string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if job, ok := m.jobs[jobID]; ok {
+		job.Filepath = filepath
 	}
 }

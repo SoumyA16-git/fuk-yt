@@ -35,9 +35,12 @@ function connect(): chrome.runtime.Port {
     // Unsolicited push events (PRD §18) — broadcast to all YouTube tabs
     if (type === 'jobProgress' || type === 'jobComplete' || type === 'jobError') {
       if (type === 'jobComplete') {
-        const payload = message.payload as { filepath?: string; jobType?: string } | undefined;
-        if (payload?.filepath) {
-          registerBrowserDownload(payload.filepath, payload.jobType || 'video');
+        const payload = message.payload as { filepath?: string; filename?: string; downloadUrl?: string } | undefined;
+        if (payload?.downloadUrl && payload?.filename) {
+          registerBrowserDownload(payload.downloadUrl, payload.filename, payload.filepath || '');
+        } else if (payload?.filepath) {
+          const baseName = payload.filepath.replace(/\\/g, '/').split('/').pop() || 'download';
+          registerBrowserDownload('file:///' + payload.filepath.replace(/\\/g, '/'), baseName, payload.filepath);
         }
       }
       broadcastToTabs({ type: 'NATIVE_PUSH', payload: message });
@@ -265,17 +268,27 @@ async function handleMessage(message: { type: string; payload?: unknown }): Prom
 // Lifecycle
 // ============================================================
 
-async function registerBrowserDownload(filepath: string, jobType: string) {
+async function registerBrowserDownload(downloadUrl: string, filename: string, stagingPath: string) {
   try {
-    const fileUrl = 'file:///' + filepath.replace(/\\/g, '/');
-    const baseName = filepath.replace(/\\/g, '/').split('/').pop() || 'download';
-    const relPath = baseName;
-
     chrome.downloads.download({
-      url: fileUrl,
-      filename: relPath,
+      url: downloadUrl,
+      filename: filename,
       conflictAction: 'overwrite',
       saveAs: false,
+    }, (downloadId) => {
+      if (downloadId && stagingPath) {
+        setTimeout(async () => {
+          try {
+            await sendNative({
+              type: 'deleteFile',
+              requestId: crypto.randomUUID(),
+              payload: { filepath: stagingPath }
+            });
+          } catch (err) {
+            console.warn('[FUK-YT SW] Staging file cleanup failed:', err);
+          }
+        }, 5000);
+      }
     });
   } catch (err) {
     console.warn('[FUK-YT SW] Browser download registration error:', err);
