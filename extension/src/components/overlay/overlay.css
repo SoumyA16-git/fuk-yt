@@ -1,0 +1,1088 @@
+/* FUK-YT Overlay Styles — injected into Shadow DOM */
+/* Uses CSS custom properties for full theme isolation */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:host {
+  all: initial;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #e2e8f0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   Design Tokens
+   ============================================================ */
+:host, .fyk {
+  --bg-deep: #09090f;
+  --bg-surface: #111118;
+  --bg-elevated: #1a1a26;
+  --bg-overlay: #1c1c2e;
+  --bg-input: #13131c;
+  --bg-hover: #22223a;
+
+  --border: #2a2a3d;
+  --border-subtle: #1e1e2c;
+  --border-focus: #7c3aed;
+
+  --accent: #8b5cf6;
+  --accent-start: #7c3aed;
+  --accent-end: #a855f7;
+  --accent-hover: #9f6fff;
+  --accent-glow: rgba(139, 92, 246, 0.25);
+  --accent-bg: rgba(139, 92, 246, 0.1);
+
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --error: #ef4444;
+  --error-bg: rgba(239, 68, 68, 0.1);
+  --info: #3b82f6;
+  --info-bg: rgba(59, 130, 246, 0.1);
+
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-disabled: #374151;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+
+  --shadow-panel: 0 16px 64px rgba(0,0,0,0.7), 0 4px 24px rgba(0,0,0,0.5);
+  --shadow-glow: 0 0 24px var(--accent-glow);
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.4);
+
+  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  --panel-width: 380px;
+  --panel-max-height: 80vh;
+}
+
+/* ============================================================
+   Floating Pill Button
+   ============================================================ */
+
+.fyk-pill {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  z-index: 2147483646;
+  pointer-events: all;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+
+  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-glow), 0 4px 20px rgba(0,0,0,0.5);
+  cursor: pointer;
+  user-select: none;
+
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+
+  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+}
+
+.fyk-pill:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 32px rgba(139, 92, 246, 0.45), 0 8px 28px rgba(0,0,0,0.6);
+}
+
+.fyk-pill:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.fyk-pill svg {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.fyk-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+  animation: pulse-dot 2s infinite;
+  flex-shrink: 0;
+}
+
+.fyk-pill-dot.disconnected {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+  animation: none;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.8); }
+}
+
+/* ============================================================
+   Panel
+   ============================================================ */
+
+.fyk-panel {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  z-index: 2147483645;
+  pointer-events: all;
+
+  width: var(--panel-width);
+  max-height: var(--panel-max-height);
+  display: flex;
+  flex-direction: column;
+
+  background: var(--bg-overlay);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-panel);
+
+  overflow: hidden;
+  transform-origin: bottom right;
+}
+
+.fyk-panel-enter {
+  animation: panel-in var(--transition-slow) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.fyk-panel-exit {
+  animation: panel-out var(--transition) ease-in forwards;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes panel-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+}
+
+/* ============================================================
+   Panel Header
+   ============================================================ */
+
+.fyk-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 14px;
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.fyk-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.fyk-logo-icon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+}
+
+.fyk-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.fyk-engine-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.fyk-engine-badge.connected {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.fyk-engine-badge.disconnected {
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.fyk-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+  flex-shrink: 0;
+}
+
+.fyk-close-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   Video Info Strip
+   ============================================================ */
+
+.fyk-video-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.fyk-thumbnail {
+  width: 72px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+}
+
+.fyk-thumbnail-placeholder {
+  width: 72px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.fyk-video-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.fyk-video-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.fyk-video-channel {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.fyk-video-duration {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Tabs
+   ============================================================ */
+
+.fyk-tabs {
+  display: flex;
+  padding: 10px 16px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 2px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+
+.fyk-tabs::-webkit-scrollbar { display: none; }
+
+.fyk-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition), background var(--transition);
+  position: relative;
+}
+
+.fyk-tab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.fyk-tab.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.fyk-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+  border-radius: var(--radius-pill);
+}
+
+.fyk-tab-badge {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================
+   Panel Body (scrollable content)
+   ============================================================ */
+
+.fyk-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.fyk-body::-webkit-scrollbar { width: 4px; }
+.fyk-body::-webkit-scrollbar-track { background: transparent; }
+.fyk-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ============================================================
+   Form Elements
+   ============================================================ */
+
+.fyk-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+
+.fyk-select {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.fyk-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.fyk-input {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.fyk-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.fyk-input::placeholder { color: var(--text-disabled); }
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+
+.fyk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.fyk-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fyk-btn-primary {
+  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.35);
+}
+
+.fyk-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5);
+}
+
+.fyk-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.fyk-btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.fyk-btn-secondary:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-focus);
+}
+
+.fyk-btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+}
+
+.fyk-btn-ghost:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.fyk-btn-danger {
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.fyk-btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.fyk-btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.fyk-btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+}
+
+.fyk-btn-full { width: 100%; }
+
+/* ============================================================
+   Status Badges
+   ============================================================ */
+
+.fyk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.fyk-badge.queued { background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); }
+.fyk-badge.preparing { background: var(--info-bg); color: var(--info); border: 1px solid rgba(59,130,246,0.2); }
+.fyk-badge.downloading { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(139,92,246,0.2); }
+.fyk-badge.processing { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245,158,11,0.2); }
+.fyk-badge.completed { background: var(--success-bg); color: var(--success); border: 1px solid rgba(16,185,129,0.2); }
+.fyk-badge.failed { background: var(--error-bg); color: var(--error); border: 1px solid rgba(239,68,68,0.2); }
+.fyk-badge.cancelled { background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* ============================================================
+   Progress Bar
+   ============================================================ */
+
+.fyk-progress-track {
+  height: 5px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.fyk-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+  border-radius: var(--radius-pill);
+  transition: width 300ms ease;
+  position: relative;
+}
+
+.fyk-progress-bar.indeterminate {
+  width: 40%;
+  animation: progress-shimmer 1.5s infinite;
+}
+
+@keyframes progress-shimmer {
+  0% { transform: translateX(-200%); }
+  100% { transform: translateX(350%); }
+}
+
+/* ============================================================
+   Format List
+   ============================================================ */
+
+.fyk-format-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fyk-format-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.fyk-format-item:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border);
+}
+
+.fyk-format-item.selected {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.fyk-format-res {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 52px;
+}
+
+.fyk-format-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.fyk-format-codec {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fyk-format-size {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.fyk-hdr-badge {
+  padding: 2px 5px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Queue / History Items
+   ============================================================ */
+
+.fyk-job-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  transition: border-color var(--transition);
+}
+
+.fyk-job-card:hover { border-color: var(--border); }
+
+.fyk-job-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 6px;
+}
+
+.fyk-job-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.fyk-job-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.fyk-job-stats {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  gap: 10px;
+}
+
+/* ============================================================
+   Timeline Clip UI
+   ============================================================ */
+
+.fyk-timeline {
+  position: relative;
+  height: 40px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: crosshair;
+  user-select: none;
+}
+
+.fyk-timeline-selection {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--accent-bg);
+  border-left: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+}
+
+.fyk-timeline-handle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 28px;
+  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  border-radius: 4px;
+  cursor: ew-resize;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+}
+
+.fyk-timeline-handle.start { left: -7px; }
+.fyk-timeline-handle.end { right: -7px; }
+
+.fyk-time-inputs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.fyk-time-input-group {
+  flex: 1;
+}
+
+.fyk-time-input-group label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.fyk-time-sep {
+  color: var(--text-muted);
+  font-size: 12px;
+  padding-top: 18px;
+}
+
+/* ============================================================
+   Settings
+   ============================================================ */
+
+.fyk-setting-group {
+  margin-bottom: 20px;
+}
+
+.fyk-setting-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.fyk-setting-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.fyk-setting-row:last-child { border-bottom: none; }
+
+.fyk-setting-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.fyk-setting-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.fyk-setting-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   Toggle Switch
+   ============================================================ */
+
+.fyk-toggle {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.fyk-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.fyk-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.fyk-toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: all var(--transition);
+}
+
+.fyk-toggle input:checked + .fyk-toggle-slider {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+}
+
+.fyk-toggle input:checked + .fyk-toggle-slider::before {
+  background: var(--accent);
+  transform: translateX(16px);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+}
+
+/* ============================================================
+   Alerts / Empty States
+   ============================================================ */
+
+.fyk-empty {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--text-muted);
+}
+
+.fyk-empty svg {
+  opacity: 0.3;
+  margin-bottom: 12px;
+}
+
+.fyk-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.fyk-empty-desc {
+  font-size: 12px;
+}
+
+.fyk-alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.fyk-alert.error {
+  background: var(--error-bg);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.fyk-alert.warning {
+  background: var(--warning-bg);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+
+.fyk-alert.info {
+  background: var(--info-bg);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+/* ============================================================
+   Loading Skeleton
+   ============================================================ */
+
+.fyk-skeleton {
+  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover) 50%, var(--bg-elevated) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================
+   Divider / Section
+   ============================================================ */
+
+.fyk-section { margin-bottom: 16px; }
+.fyk-section:last-child { margin-bottom: 0; }
+
+.fyk-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 12px 0;
+}
+
+.fyk-row {
+  display: flex;
+  gap: 8px;
+}
+
+.fyk-row > * { flex: 1; }
+
+/* ============================================================
+   Scrollbar in body
+   ============================================================ */
+
+.fyk-body::-webkit-scrollbar { width: 4px; }
+.fyk-body::-webkit-scrollbar-track { background: transparent; }
+.fyk-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* ============================================================
+   New Premium Layout
+   ============================================================ */
+.fyk-panel-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.fyk-sidebar {
+  width: 72px;
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0;
+  gap: 8px;
+}
+
+.fyk-sidebar-item {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+}
+
+.fyk-sidebar-item:hover {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.03);
+}
+
+.fyk-sidebar-item.active {
+  color: var(--accent);
+}
+
+.fyk-sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10%;
+  height: 80%;
+  width: 3px;
+  background: var(--accent);
+  border-radius: 0 4px 4px 0;
+  box-shadow: var(--shadow-glow);
+}
+
+.fyk-main-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.fyk-audio-waveform-bg {
+  height: 120px;
+  background: linear-gradient(to bottom, var(--bg-overlay), var(--bg-deep));
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-subtle);
+}
+
+.fyk-global-progress {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}

@@ -1,0 +1,9 @@
+{
+  "name": "com.fukyt.host",
+  "description": "FUK-YT Local Download Engine",
+  "path": "C:\\Program Files\\FUK-YT\\host.exe",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://EXTENSION_ID_PLACEHOLDER/"
+  ]
+}

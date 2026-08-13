@@ -1,0 +1,9 @@
+{
+    "path":  "C:\\Users\\soumy\\Documents\\Fuk-YT\\native-host\\bin\\native-host.exe",
+    "description":  "FUK-YT Local Download Engine",
+    "name":  "com.fukyt.host",
+    "allowed_origins":  [
+                            "chrome-extension://afkbnpippihdclgeodpmmpeocbbinpeo/"
+                        ],
+    "type":  "stdio"
+}

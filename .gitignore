@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Extension Build output
+extension/dist/
+
+# Logs & Temp files
+*.log
+.fuk-yt-tmp-*
+temp/
+logs/
+bin/bin/
+
+# OS metadata
+.DS_Store
+Thumbs.db
