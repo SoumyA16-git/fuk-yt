@@ -8,19 +8,30 @@ echo ===================================================
 echo.
 
 set "ROOT_DIR=%~dp0"
-set "HOST_DIR=%ROOT_DIR%native-host"
-set "BIN_DIR=%HOST_DIR%\bin"
-set "TOOLS_DIR=%BIN_DIR%\bin"
-set "MANIFEST_PATH=%HOST_DIR%\com.fukyt.host.json"
 set "EXTENSION_ID=afkbnpippihdclgeodpmmpeocbbinpeo"
 
-:: 1. Check if native-host.exe exists
-if not exist "%BIN_DIR%\native-host.exe" (
+:: Find native-host.exe in top directory, bin/, or native-host/bin/
+set "NATIVE_EXE="
+if exist "%ROOT_DIR%native-host.exe" (
+    set "NATIVE_EXE=%ROOT_DIR%native-host.exe"
+    set "BIN_DIR=%ROOT_DIR%"
+) else if exist "%ROOT_DIR%bin\native-host.exe" (
+    set "NATIVE_EXE=%ROOT_DIR%bin\native-host.exe"
+    set "BIN_DIR=%ROOT_DIR%bin"
+) else if exist "%ROOT_DIR%native-host\bin\native-host.exe" (
+    set "NATIVE_EXE=%ROOT_DIR%native-host\bin\native-host.exe"
+    set "BIN_DIR=%ROOT_DIR%native-host\bin"
+)
+
+if "%NATIVE_EXE%"=="" (
     echo [ERROR] native-host.exe not found!
-    echo Please run 'powershell .\scripts\build.ps1' to compile the backend first.
+    echo Please make sure native-host.exe is in the same directory as install.bat.
     pause
     exit /b 1
 )
+
+set "TOOLS_DIR=%BIN_DIR%\bin"
+set "MANIFEST_PATH=%BIN_DIR%\com.fukyt.host.json"
 
 :: 2. Create tools directory
 if not exist "%TOOLS_DIR%" mkdir "%TOOLS_DIR%"
@@ -45,7 +56,7 @@ if not exist "%TOOLS_DIR%\ffmpeg.exe" (
 
 :: 5. Create Manifest File
 echo [3/3] Registering Chrome Native Host...
-set "ESCAPED_HOST_PATH=%BIN_DIR:\=\\%\\native-host.exe"
+set "ESCAPED_HOST_PATH=%NATIVE_EXE:\=\\%"
 
 (
 echo {
@@ -64,8 +75,10 @@ REG ADD "HKCU\Software\Google\Chrome\NativeMessagingHosts\com.fukyt.host" /ve /t
 
 echo.
 echo ===================================================
-echo [SUCCESS] FUK-YT has been successfully installed!
+echo [SUCCESS] FUK-YT Engine has been successfully installed!
 echo ===================================================
+echo.
+echo Host Path: %NATIVE_EXE%
 echo.
 echo You can now use the extension on YouTube.
 echo (Make sure to reload the extension in chrome://extensions if it's already open)
