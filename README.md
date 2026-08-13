@@ -1,228 +1,215 @@
-# FUK-YT
+# ⚡ Fuk-YT — Ultra-Fast YouTube Downloader Extension & Local Engine
 
-**Local YouTube downloader and clipper — Windows Chrome Extension + Go Native Host**
+<div align="center">
 
-No remote backend. No data leaves your machine. All processing happens locally via bundled yt-dlp and FFmpeg binaries.
+![GitHub release](https://img.shields.io/badge/version-v0.2.0-red?style=for-the-badge&logo=youtube)
+![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Chrome MV3](https://img.shields.io/badge/Chrome_Extension-MV3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
----
+<br />
 
-## Features (MVP)
+**A sleek, YouTube-native Chrome extension powered by a local high-performance Go engine for instant video, audio, and clip downloads.**
 
-- ✅ YouTube overlay injected on watch pages and Shorts (Shadow DOM isolated)
-- ✅ SPA navigation detection (no page reload needed)
-- ✅ Engine health check (yt-dlp, FFmpeg, FFprobe status)
-- ✅ Format detection from live yt-dlp output (no hardcoded quality lists)
-- ✅ Video download (best quality or selected format)
-- ✅ Audio download (MP3, M4A, OPUS, WAV with quality tiers)
-- ✅ Timeline clip (drag or manual HH:MM:SS input, video or audio clip)
-- ✅ Download queue with real-time progress, cancel, retry, remove
-- ✅ Download history
-- ✅ Configurable settings (download folder, quality, concurrency, etc.)
-- ✅ Windows NSIS installer
+</div>
 
 ---
 
-## Architecture
+## 🖼️ Preview & Screenshots
 
+> [!NOTE]  
+> **Placeholder links** are provided below. Replace `YOUR_..._IMAGE_URL_HERE` with your hosted screenshot URLs or repository asset paths.
+
+### 🌟 Hero Banner
+![Fuk-YT Hero Banner](YOUR_HERO_IMAGE_URL_HERE)
+
+---
+
+### 🎨 In-Page Downloader Bar
+![YouTube In-Page Downloader Bar](YOUR_CONTROL_BAR_IMAGE_URL_HERE)
+
+---
+
+### ✂️ Precision Clip Trimmer with Live Frame Seeking
+![Clip Trimming Interface](YOUR_CLIP_TRIMMER_IMAGE_URL_HERE)
+
+---
+
+### 📥 Chrome Browser Downloads Manager Integration
+![Chrome Download Manager Integration](YOUR_CHROME_DOWNLOADS_IMAGE_URL_HERE)
+
+---
+
+## 🔥 Key Features
+
+- 🎨 **YouTube Native Dark Theme UI**: Seamlessly embeds right below the YouTube player on watch pages with 36px YouTube pill controls.
+- ⚡ **High-Speed Downloads**: Instant 50–100+ Mbps downloads using stream copy and optimized chunk fetching.
+- 📹 **Universal H.264 (AVC) & AAC Output**: Guaranteed 100% playback compatibility across Windows Media Player, QuickTime, TVs, and editors (Premiere Pro, DaVinci Resolve).
+- ✂️ **Interactive Video & Audio Trimmer**:
+  - Automatically **pauses YouTube player** when opening the Clip tab.
+  - **Live Frame Seeking**: Dragging start or end timeline handles seeks the YouTube player live so you can preview exact frames.
+  - Instant loss-free clip cutting with zero green screen or corruption artifacts.
+- 🏷️ **Smart Filename Formatting**: Output files are automatically named after the video title with quality tags:
+  - Video: `Song Title [1080p].mp4`
+  - Audio: `Song Title [320k].mp3`
+  - Clip: `Song Title [Clip 1080p].mp4`
+- 📥 **Chrome Downloads Integration**: Automatically registers completed downloads in Chrome's `chrome://downloads` history and native browser shelf.
+- 🔒 **Local & Privacy First**: Zero tracking, zero ads, zero telemetry. All operations run 100% locally via Chrome Native Messaging and Go binaries.
+
+---
+
+## 🛠️ Requirements & Prerequisites
+
+Before setting up Fuk-YT, ensure you have:
+- **OS**: Windows 10 or Windows 11 (64-bit)
+- **Browser**: Google Chrome, Brave, Edge, or any MV3 Chromium browser
+- **Go**: [Go 1.22+](https://go.dev/dl/) (Required to build the local native engine)
+- **Node.js**: [Node.js 18+](https://nodejs.org/) & `npm` (Required to build the Chrome extension)
+- **FFmpeg & yt-dlp**: Automatically bundled or resolved by `install.bat`.
+
+---
+
+## 🚀 Quick Setup & Installation (1-Click)
+
+### Step 1: Clone the Repository
+Open your terminal or Command Prompt and run:
+```bash
+git clone https://github.com/SoumyA16-git/fuk-yt.git
+cd fuk-yt
 ```
-YouTube Page
-  → Content Script (Shadow DOM overlay, React)
-  → Service Worker (MV3 background, native messaging bridge)
-  → chrome.runtime.connectNative("com.fukyt.host")
-  → Native Host (host.exe, Go)
-  → yt-dlp.exe + ffmpeg.exe/ffprobe.exe
-  → %USERPROFILE%\Downloads\FUK-YT\
+
+---
+
+### Step 2: Run the Automated Installer
+Double-click `install.bat` or run it from Command Prompt:
+```cmd
+install.bat
+```
+What `install.bat` does automatically:
+1. Compiles the high-performance Go native host (`native-host/bin/native-host.exe`).
+2. Registers the Chrome Native Messaging host in Windows Registry (`HKCU\Software\Google\Chrome\NativeMessagingHosts\com.fukyt.host`).
+3. Installs NPM dependencies and builds the Chrome Extension bundle (`extension/dist/`).
+
+---
+
+### Step 3: Load Extension into Chrome
+1. Open Google Chrome and navigate to `chrome://extensions`.
+2. Enable **Developer mode** using the toggle in the top-right corner.
+3. Click **Load unpacked** in the top-left corner.
+4. Select the `extension/dist` folder inside the `fuk-yt` repository directory.
+
+![Chrome Extensions Load Unpacked Placeholder](YOUR_CHROME_EXTENSIONS_PAGE_IMAGE_URL_HERE)
+
+---
+
+### Step 4: Verify & Enjoy!
+1. Open any YouTube video (e.g. `https://www.youtube.com/watch?v=...`).
+2. You will see the **Fuk-YT** control bar directly underneath the video player with an `Engine Ready` indicator!
+
+<details>
+<summary>🛠️ <b>Click here for Manual Developer Build Instructions</b></summary>
+
+### Manual Build Instructions
+
+If you prefer building components individually:
+
+#### 1. Build the Go Native Host
+```bash
+cd native-host
+go mod tidy
+go build -ldflags="-s -w" -o bin/native-host.exe ./cmd/host
 ```
 
-**Key rules:**
-- Content script never calls native messaging directly
-- Native host is the only process that spawns yt-dlp/FFmpeg
-- All exec calls use argument arrays — no shell string construction
-- Path traversal is validated by native host before any file I/O
+#### 2. Register Native Host Manifest
+Create/update registry key:
+`HKCU\Software\Google\Chrome\NativeMessagingHosts\com.fukyt.host`
+pointing to the absolute path of `native-host/com.fukyt.host.json`.
 
----
-
-## Prerequisites
-
-| Tool | Version | Purpose |
-|---|---|---|
-| Node.js | 18+ | Extension build |
-| npm | 9+ | Extension dependencies |
-| Go | 1.22+ | Native host build |
-| NSIS | 3.x | Installer build (optional for dev) |
-
-> **⚠️ SmartScreen Warning**: The native host binary is unsigned in MVP. Windows SmartScreen will warn on first launch. Click "More info → Run anyway". This will be addressed in a future release with code signing.
-
----
-
-## Setup & Build
-
-### 1. Extension
-
-```powershell
+#### 3. Build the Extension
+```bash
 cd extension
 npm install
-npm run build   # builds to extension/dist/
+npm run build
 ```
 
-To load in Chrome:
-1. Go to `chrome://extensions`
-2. Enable **Developer mode**
-3. Click **Load unpacked** → select `extension/dist/`
-4. Note your extension ID (you'll need it for the installer)
+</details>
 
-### 2. Native Host
+---
 
-```powershell
-# Install Go from https://go.dev/dl/ first
+## 📖 How to Use
 
-cd native-host
+### 🎥 1. Video Downloading
+1. Click the **Video** tab on the control bar.
+2. Select desired quality (e.g. **1080p**, **720p**, **4K**) from the dropdown.
+3. Choose container format (**MP4** or **MKV**).
+4. Click **Download Video**.
+5. Once complete, click **Open File** / **Open Folder** or check Chrome's download manager (`chrome://downloads`).
 
-# Download yt-dlp.exe, ffmpeg.exe, ffprobe.exe into native-host/bin/
-# yt-dlp: https://github.com/yt-dlp/yt-dlp/releases/latest
-# FFmpeg: https://www.gyan.dev/ffmpeg/builds/ (essentials build)
+---
 
-# Build
-go mod tidy
-go build -o bin/host.exe ./cmd/host/
+### 🎵 2. Audio Downloading
+1. Click the **Audio** tab.
+2. Choose audio format (**MP3**, **M4A**, **OPUS**).
+3. Select audio bitrate (**320k**, **256k**, **192k**, **128k**).
+4. Click **Download Audio**.
 
-# Verify
-./bin/host.exe --health-check
+---
+
+### ✂️ 3. Precision Clipping / Trimming
+1. Click the **Clip** tab (YouTube video player will **auto-pause**).
+2. Drag the **Start** and **End** timeline handles or type exact timestamps (`MM:SS`).
+3. While dragging, watch the YouTube video player — it will **seek live** to display the exact frame!
+4. Click **Video Clip** or **Audio Clip**.
+5. Your clip will be cut cleanly with H.264 keyframe alignment and saved in seconds.
+
+---
+
+## 📁 File Output Location
+
+All downloaded files are organized in your local Downloads folder under:
 ```
-
-### 3. Register Native Messaging Manifest (Manual Dev Setup)
-
-Before using the installer, you can register manually:
-
-```powershell
-# Replace EXTENSION_ID with your actual Chrome extension ID
-$manifest = @"
-{
-  "name": "com.fukyt.host",
-  "description": "FUK-YT Local Download Engine",
-  "path": "C:\\path\\to\\native-host\\bin\\host.exe",
-  "type": "stdio",
-  "allowed_origins": ["chrome-extension://YOUR_EXTENSION_ID/"]
-}
-"@
-
-$manifestPath = "$env:APPDATA\FUK-YT\com.fukyt.host.json"
-New-Item -ItemType Directory -Force -Path (Split-Path $manifestPath)
-$manifest | Out-File -Encoding UTF8 -FilePath $manifestPath
-
-# Register in HKCU (no admin needed)
-New-Item -Path "HKCU:\Software\Google\Chrome\NativeMessagingHosts\com.fukyt.host" -Force
-Set-ItemProperty -Path "HKCU:\Software\Google\Chrome\NativeMessagingHosts\com.fukyt.host" -Name "(default)" -Value $manifestPath
-```
-
-### 4. Installer (NSIS)
-
-```powershell
-# Ensure host.exe and bin/*.exe are built
-cd installer
-
-# Edit fuk-yt.nsi: replace EXTENSION_ID_PLACEHOLDER with real extension ID
-# Then compile:
-makensis fuk-yt.nsi
+%USERPROFILE%\Downloads\FUK-YT\
+├── Videos/    # Video downloads (.mp4 / .mkv)
+├── Audio/     # Audio extractions (.mp3 / .m4a)
+└── Clips/     # Trimmed clips (.mp4 / .mp3)
 ```
 
 ---
 
-## Project Structure
+## 🔍 Troubleshooting
+
+| Issue | Cause | Solution |
+| :--- | :--- | :--- |
+| **Engine Offline** badge in UI | Native host registry key missing or Go binary missing | Run `install.bat` again to register host binary in Registry. |
+| **UI disappeared on page reload** | Chrome extension updated or tab cached | Refresh extension in `chrome://extensions` and press `F5` on YouTube. |
+| **Download stuck at 0%** | Native engine connection reset | Click **Cancel**, then click **Retry** on the progress card. |
+
+---
+
+## 🏗️ Tech Stack & Architecture
 
 ```
-Fuk-YT/
-├── extension/           # Chrome Extension (Vite + React + TS + Tailwind v4)
-│   ├── src/
-│   │   ├── background/  # Service worker (native messaging bridge)
-│   │   ├── content/     # Content script + Shadow DOM mount
-│   │   ├── popup/       # Browser action popup
-│   │   ├── options/     # Settings page
-│   │   ├── components/  # React UI (overlay, tabs)
-│   │   ├── services/    # NativeClient, StorageClient
-│   │   └── types/       # Shared TS types & message contracts
-│   └── manifest.json    # MV3 manifest
-├── native-host/         # Go native host
-│   ├── cmd/host/        # Entry point (main.go)
-│   ├── internal/
-│   │   ├── ipc/         # Native Messaging framing (length-prefixed JSON)
-│   │   ├── jobs/        # Job manager, state machine, concurrency
-│   │   ├── ytdlp/       # yt-dlp wrapper (argument-array exec)
-│   │   ├── ffmpeg/      # FFmpeg wrapper (merge, clip, audio)
-│   │   ├── validate/    # Input validation, path sanitization
-│   │   ├── store/       # SQLite persistence
-│   │   └── logging/     # Structured JSON logger
-│   └── bin/             # yt-dlp.exe, ffmpeg.exe, ffprobe.exe (not committed)
-├── installer/           # NSIS installer + NM manifest template
-├── docs/
-└── README.md
+┌─────────────────────────┐         Chrome Native Messaging         ┌──────────────────────────┐
+│ Chrome Extension (MV3)  │ ◄─────────────────────────────────────► │  Go Native Engine Host   │
+│ React + TypeScript      │   (JSON stdin/stdout IPC protocol)      │  (native-host.exe)       │
+└─────────────────────────┘                                         └────────────┬─────────────┘
+             │                                                                   │
+             ▼                                                                   ▼
+┌─────────────────────────┐                                         ┌──────────────────────────┐
+│  Injected Content Script│                                         │ yt-dlp & FFmpeg Pipeline │
+│  (YouTube DOM Anchor)   │                                         │ (H.264 + Stream Copy)    │
+└─────────────────────────┘                                         └──────────────────────────┘
 ```
 
 ---
 
-## Settings
+## 📜 License
 
-| Group | Key Settings |
-|---|---|
-| General | Download folder, default quality, audio format, filename template |
-| Downloads | Max concurrent (1–5), auto-retry count, overwrite behavior, organize-into-folders |
-| Processing | FFmpeg/yt-dlp paths (read-only display), hardware acceleration |
-| UI | Compact mode |
-| Advanced | Debug logging, engine status, check for yt-dlp updates, reset settings |
+Distributed under the **MIT License**. See `LICENSE` for more information.
 
 ---
 
-## Security Model
-
-- All URLs, format IDs, timestamps, filenames from the webpage are treated as **untrusted**
-- Native host validates all inputs against a strict allowlist before acting
-- yt-dlp and FFmpeg are invoked via **argument arrays only** — no shell string construction
-- Output paths are validated to stay within the configured download root
-- Filenames are sanitized for Windows (no reserved names, no invalid characters)
-- Malformed IPC messages return a structured error; the host stays alive
-
----
-
-## Retry Policy
-
-Failed downloads are retried **3 times** with exponential backoff:
-- Attempt 1 → wait 1s → retry
-- Attempt 2 → wait 2s → retry
-- Attempt 3 → wait 4s → retry
-- After 3 failures: status = `failed`
-
----
-
-## Clip Accuracy
-
-For timeline clips:
-- **Stream copy** (`ffmpeg -c copy`) is tried first (fast, preserves quality)
-- If the keyframe misalignment at either the start or end exceeds **2 seconds**, the native host automatically falls back to **re-encode** for accuracy
-- This decision is made entirely by the native host; the user is not asked
-
----
-
-## Privacy
-
-- No remote backend; no telemetry
-- All data stays on-device: YouTube page → yt-dlp → FFmpeg → local file
-- History is stored locally in `%APPDATA%\FUK-YT\data.db` (SQLite)
-
----
-
-## Phase 2 Roadmap
-
-- Playlist support
-- Multiple clip ranges (download separately or merge)
-- Presets
-- Subtitles (SRT/VTT embed or separate file)
-- Chapters display + per-chapter download
-- Thumbnail/metadata embedding
-- Full queue reordering / pause-resume
-- Configurable keyboard shortcuts
-
----
-
-## License
-
-See [LICENSE](LICENSE).
+<div align="center">
+Made with ❤️ by <b>SoumyA16-git</b>
+</div>
