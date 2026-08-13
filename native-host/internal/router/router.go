@@ -6,7 +6,9 @@ package router
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 
 	"github.com/fukyt/host/internal/ffmpeg"
@@ -322,16 +324,51 @@ func containsAny(s string, subs ...string) bool {
 }
 
 func openFileCmd(path string) {
-	_ = exec.Command("cmd", "/c", "start", "", path).Start()
+	cleanPath := filepath.Clean(filepath.FromSlash(path))
+	_ = exec.Command("cmd", "/c", "start", "", cleanPath).Start()
 }
 
 func openFolderCmd(path string) {
-	// Using SysProcAttr.CmdLine bypasses Go's automatic argument escaping which
-	// otherwise corrupts the /select,<path> argument if the path contains spaces
-	// or brackets (like "[1080p]").
-	cmd := exec.Command("explorer.exe")
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		CmdLine: fmt.Sprintf(`explorer.exe /select,"%s"`, path),
+	cleanPath := filepath.Clean(filepath.FromSlash(path))
+
+	// 1. If file exists on disk, highlight it in Explorer
+	if info, err := os.Stat(cleanPath); err == nil && !info.IsDir() {
+		cmd := exec.Command("explorer.exe")
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			CmdLine: fmt.Sprintf(`explorer.exe /select,"%s"`, cleanPath),
+		}
+		_ = cmd.Start()
+		return
 	}
-	_ = cmd.Start()
+
+	// 2. If directory exists, open directory directly
+	if info, err := os.Stat(cleanPath); err == nil && info.IsDir() {
+		cmd := exec.Command("explorer.exe")
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			CmdLine: fmt.Sprintf(`explorer.exe "%s"`, cleanPath),
+		}
+		_ = cmd.Start()
+		return
+	}
+
+	// 3. Fallback: Open parent directory so user is taken to their Downloads/Videos folder
+	parentDir := filepath.Dir(cleanPath)
+	if _, err := os.Stat(parentDir); err == nil {
+		cmd := exec.Command("explorer.exe")
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			CmdLine: fmt.Sprintf(`explorer.exe "%s"`, parentDir),
+		}
+		_ = cmd.Start()
+		return
+	}
+
+	// 4. Ultimate fallback: User's Downloads folder
+	if home, err := os.UserHomeDir(); err == nil {
+		downloads := filepath.Join(home, "Downloads")
+		cmd := exec.Command("explorer.exe")
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			CmdLine: fmt.Sprintf(`explorer.exe "%s"`, downloads),
+		}
+		_ = cmd.Start()
+	}
 }

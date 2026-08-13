@@ -1,12 +1,14 @@
 package router
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -78,7 +80,11 @@ func (r *Router) handleTriggerUpdate(msg *host.RawMessage) error {
 		}
 	}
 
-	// 3. Create updater.bat
+	// 3. Auto-detect Extension Directory across Chrome / Edge / Brave profiles and known candidate folders
+	detectedExtDir := findExtensionDirectory(exeDir)
+	logging.Info("updater: detected extension directory", map[string]interface{}{"path": detectedExtDir})
+
+	// 4. Create updater.bat
 	logging.Info("updater: creating Windows batch script updater", map[string]interface{}{"path": updaterBatPath})
 	batContent := fmt.Sprintf(`@echo off
 setlocal enabledelayedexpansion
@@ -88,6 +94,7 @@ set "NEW_PATH=%s"
 set "EXE_NAME=%s"
 set "OLD_PATH=%s.old"
 set "EXT_ZIP=%s"
+set "DETECTED_EXT_DIR=%s"
 
 timeout /t 1 /nobreak > NUL
 
@@ -101,41 +108,65 @@ ren "!NEW_PATH!" "!EXE_NAME!" >> updater.log 2>&1
 :: Extract Extension if zip exists
 if exist "!EXT_ZIP!" (
     echo [%%date%% %%time%%] Extension ZIP found. Attempting extraction. >> updater.log
-    set "EXT_DIR="
-    if exist "%%~dp0..\..\extension\manifest.json" (
-        set "EXT_DIR=%%~dp0..\..\extension"
-    ) else if exist "%%~dp0..\extension\manifest.json" (
-        set "EXT_DIR=%%~dp0..\extension"
+    set "EXT_DIR=!DETECTED_EXT_DIR!"
+    if "!EXT_DIR!"=="" (
+        if exist "%%~dp0..\..\extension\manifest.json" (
+            set "EXT_DIR=%%~dp0..\..\extension"
+        ) else if exist "%%~dp0..\extension\manifest.json" (
+            set "EXT_DIR=%%~dp0..\extension"
+        ) else if exist "%%~dp0..\..\fuk-yt-extension\manifest.json" (
+            set "EXT_DIR=%%~dp0..\..\fuk-yt-extension"
+        ) else if exist "%%~dp0..\fuk-yt-extension\manifest.json" (
+            set "EXT_DIR=%%~dp0..\fuk-yt-extension"
+        ) else if exist "%%~dp0extension\manifest.json" (
+            set "EXT_DIR=%%~dp0extension"
+        ) else if exist "%%~dp0fuk-yt-extension\manifest.json" (
+            set "EXT_DIR=%%~dp0fuk-yt-extension"
+        ) else if exist "%%USERPROFILE%%\Downloads\fuk-yt-extension\manifest.json" (
+            set "EXT_DIR=%%USERPROFILE%%\Downloads\fuk-yt-extension"
+        ) else if exist "%%USERPROFILE%%\Desktop\fuk-yt-extension\manifest.json" (
+            set "EXT_DIR=%%USERPROFILE%%\Desktop\fuk-yt-extension"
+        )
     )
     
     if not "!EXT_DIR!"=="" (
         echo [%%date%% %%time%%] Extracting extension to !EXT_DIR! >> updater.log
         powershell -NoProfile -Command "Expand-Archive -Path '!EXT_ZIP!' -DestinationPath '!EXT_DIR!' -Force" >> updater.log 2>&1
+        echo [%%date%% %%time%%] Extension extracted successfully >> updater.log
     ) else (
         echo [%%date%% %%time%%] Could not locate extension folder. >> updater.log
     )
     del /f /q "!EXT_ZIP!" > NUL 2>&1
 )
 
+:: Update yt-dlp if present in binary directory
+if exist "%%~dp0yt-dlp.exe" (
+    echo [%%date%% %%time%%] Updating yt-dlp binary >> updater.log
+    start /b "" "%%~dp0yt-dlp.exe" -U >> updater.log 2>&1
+) else if exist "%%~dp0bin\yt-dlp.exe" (
+    echo [%%date%% %%time%%] Updating yt-dlp binary in bin >> updater.log
+    start /b "" "%%~dp0bin\yt-dlp.exe" -U >> updater.log 2>&1
+)
+
 timeout /t 1 /nobreak > NUL
 if exist "!OLD_PATH!" del /f /q "!OLD_PATH!" > NUL 2>&1
 
-echo [%%date%% %%time%%] Finished >> updater.log
+echo [%%date%% %%time%%] Finished successfully >> updater.log
 del "%%~f0" & exit
-`, exePath, newExePath, exeName, exePath, extensionZipPath)
+`, exePath, newExePath, exeName, exePath, extensionZipPath, detectedExtDir)
 
 	err = os.WriteFile(updaterBatPath, []byte(batContent), 0755)
 	if err != nil {
 		return r.h.SendError(msg.RequestID, "UPDATER_SCRIPT_FAILED", "Failed to write updater script: "+err.Error())
 	}
 
-	// 4. Send success response before process exits
+	// 5. Send success response before process exits
 	err = r.h.SendResponse(msg.RequestID, map[string]bool{"updating": true})
 	if err != nil {
 		logging.Warn("updater: failed to send response to extension: " + err.Error())
 	}
 
-	// 5. Start updater.bat detached and exit immediately
+	// 6. Start updater.bat detached and exit immediately
 	logging.Info("updater: launching updater.bat detached", nil)
 	cmd := exec.Command("cmd", "/c", "updater.bat")
 	cmd.Dir = exeDir
@@ -157,4 +188,85 @@ del "%%~f0" & exit
 	}()
 
 	return nil
+}
+
+func findExtensionDirectory(exeDir string) string {
+	extId := "afkbnpippihdclgeodpmmpeocbbinpeo"
+
+	// 1. Check Chrome / Edge / Brave Preferences file for exact loaded extension directory
+	if p := findExtensionFromBrowserPreferences(extId); p != "" {
+		return p
+	}
+
+	// 2. Scan candidate directory paths
+	home, _ := os.UserHomeDir()
+	candidates := []string{
+		filepath.Join(exeDir, "..", "..", "extension"),
+		filepath.Join(exeDir, "..", "extension"),
+		filepath.Join(exeDir, "..", "..", "fuk-yt-extension"),
+		filepath.Join(exeDir, "..", "fuk-yt-extension"),
+		filepath.Join(exeDir, "..", "..", "extension", "dist"),
+		filepath.Join(exeDir, "..", "extension", "dist"),
+		filepath.Join(exeDir, "extension"),
+		filepath.Join(exeDir, "fuk-yt-extension"),
+		filepath.Join(home, "Downloads", "fuk-yt-extension"),
+		filepath.Join(home, "Downloads", "extension"),
+		filepath.Join(home, "Desktop", "fuk-yt-extension"),
+		filepath.Join(home, "Desktop", "extension"),
+		filepath.Join(home, "Documents", "fuk-yt-extension"),
+		filepath.Join(home, "Documents", "Fuk-YT", "extension"),
+		filepath.Join(home, "Documents", "Fuk-YT", "extension", "dist"),
+	}
+
+	for _, c := range candidates {
+		if _, err := os.Stat(filepath.Join(c, "manifest.json")); err == nil {
+			return c
+		}
+	}
+
+	return ""
+}
+
+func findExtensionFromBrowserPreferences(extId string) string {
+	localData := os.Getenv("LOCALAPPDATA")
+	if localData == "" {
+		return ""
+	}
+
+	browserDataDirs := []string{
+		filepath.Join(localData, "Google", "Chrome", "User Data"),
+		filepath.Join(localData, "Microsoft", "Edge", "User Data"),
+		filepath.Join(localData, "BraveSoftware", "Brave-Browser", "User Data"),
+	}
+
+	for _, bDir := range browserDataDirs {
+		entries, err := os.ReadDir(bDir)
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			if entry.IsDir() && (entry.Name() == "Default" || strings.HasPrefix(entry.Name(), "Profile ")) {
+				prefPath := filepath.Join(bDir, entry.Name(), "Preferences")
+				data, err := os.ReadFile(prefPath)
+				if err != nil {
+					continue
+				}
+				var prefMap struct {
+					Extensions struct {
+						Settings map[string]struct {
+							Path string `json:"path"`
+						} `json:"settings"`
+					} `json:"extensions"`
+				}
+				if err := json.Unmarshal(data, &prefMap); err == nil {
+					if setting, ok := prefMap.Extensions.Settings[extId]; ok && setting.Path != "" {
+						if _, err := os.Stat(filepath.Join(setting.Path, "manifest.json")); err == nil {
+							return setting.Path
+						}
+					}
+				}
+			}
+		}
+	}
+	return ""
 }

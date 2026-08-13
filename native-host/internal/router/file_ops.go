@@ -110,46 +110,50 @@ func getDownloadsDir() (string, error) {
 		return filepath.Join(os.Getenv("HOME"), "Downloads"), nil
 	}
 
-	cmd := exec.Command("reg", "query", `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "/v", "{374DE290-123F-4565-9164-39C4925E467B}")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		HideWindow:    true,
-		CreationFlags: 0x08000000, // CREATE_NO_WINDOW
+	keys := []string{
+		"{374DE290-123F-4565-9164-39C4925E467B}",
+		"{7D83EE9B-2244-4E70-B1F5-54F5E68C6AE2}",
+		"{7512513A-2193-4A2C-AE4F-D8E3E14747ED}",
+		"Downloads",
 	}
-	err := cmd.Run()
-	if err != nil {
-		cmd = exec.Command("reg", "query", `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "/v", "{7512513A-2193-4A2C-AE4F-D8E3E14747ED}")
-		out.Reset()
+
+	for _, k := range keys {
+		cmd := exec.Command("reg", "query", `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "/v", k)
+		var out bytes.Buffer
 		cmd.Stdout = &out
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:    true,
 			CreationFlags: 0x08000000,
 		}
-		if err2 := cmd.Run(); err2 != nil {
-			return "", err2
+		if err := cmd.Run(); err == nil {
+			lines := strings.Split(out.String(), "\n")
+			for _, line := range lines {
+				if strings.Contains(line, "REG_EXPAND_SZ") || strings.Contains(line, "REG_SZ") {
+					parts := strings.SplitN(strings.TrimSpace(line), "REG_EXPAND_SZ", 2)
+					if len(parts) < 2 {
+						parts = strings.SplitN(strings.TrimSpace(line), "REG_SZ", 2)
+					}
+					if len(parts) >= 2 {
+						path := strings.TrimSpace(parts[1])
+						if strings.Contains(path, "%USERPROFILE%") {
+							path = strings.ReplaceAll(path, "%USERPROFILE%", os.Getenv("USERPROFILE"))
+						}
+						if strings.Contains(path, "%") {
+							path = os.ExpandEnv(path)
+						}
+						if path != "" {
+							return path, nil
+						}
+					}
+				}
+			}
 		}
 	}
 
-	lines := strings.Split(out.String(), "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "REG_EXPAND_SZ") || strings.Contains(line, "REG_SZ") {
-			parts := strings.SplitN(strings.TrimSpace(line), "REG_EXPAND_SZ", 2)
-			if len(parts) < 2 {
-				parts = strings.SplitN(strings.TrimSpace(line), "REG_SZ", 2)
-			}
-			if len(parts) >= 2 {
-				path := strings.TrimSpace(parts[1])
-				if strings.Contains(path, "%USERPROFILE%") {
-					path = strings.ReplaceAll(path, "%USERPROFILE%", os.Getenv("USERPROFILE"))
-				}
-				if strings.Contains(path, "%") {
-					path = os.ExpandEnv(path)
-				}
-				return path, nil
-			}
-		}
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		return filepath.Join(home, "Downloads"), nil
 	}
+
 	return "", fmt.Errorf("reg query: could not parse path")
 }
 
