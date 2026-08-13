@@ -38,8 +38,8 @@ if errorlevel 1 (
 )
 cd ..
 
-echo Zipping native host engine package...
-powershell -NoProfile -Command "Compress-Archive -Path native-host\bin\native-host.exe, native-host\com.fukyt.host.json, install.bat -DestinationPath fuk-yt-engine-windows.zip -Force"
+echo Zipping native host engine package (including bundled yt-dlp and FFmpeg)...
+powershell -NoProfile -Command "Compress-Archive -Path native-host\bin\*, install.bat, native-host\com.fukyt.host.json -DestinationPath fuk-yt-engine-windows.zip -Force"
 
 echo.
 echo [3/6] Staging modified files...
