@@ -22,7 +22,7 @@
 > **Placeholder links** are provided below. Replace `YOUR_..._IMAGE_URL_HERE` with your hosted screenshot URLs or repository asset paths.
 
 ### 🌟 Hero Banner
-![Fuk-YT Hero Banner](https://i.ibb.co/7JWHWKMf/image.png)
+![Fuk-YT Hero Banner](https://i.ibb.co/pNbGX4q/image.png)
 
 ---
 
