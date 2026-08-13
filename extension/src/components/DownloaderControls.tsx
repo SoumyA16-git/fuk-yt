@@ -316,7 +316,6 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             }}
           >
             <GithubIcon size={14} />
-            <span style={{ opacity: 0.8 }}>SoumyA16-git/fuk-yt</span>
             <div
               style={{
                 display: 'flex',
@@ -335,6 +334,42 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             </div>
           </a>
 
+          {/* Update Now Button (if available) */}
+          {engineReady && engineInfo && githubVersion && isNewerVersion(githubVersion, engineInfo.version) && (
+            <button
+              onClick={handleUpdateEngine}
+              disabled={isUpdating}
+              style={{
+                background: '#f1c40f',
+                color: '#0f0f0f',
+                border: 'none',
+                height: 32,
+                padding: '0 12px',
+                borderRadius: 16,
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: isUpdating ? 'default' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                transition: 'opacity 0.2s ease',
+                opacity: isUpdating ? 0.7 : 1,
+              }}
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                  <span>Updating...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={12} />
+                  <span>Update to {githubVersion}</span>
+                </>
+              )}
+            </button>
+          )}
+
           {/* Engine Status Badge */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', borderRadius: 16, background: 'rgba(255, 255, 255, 0.05)', fontSize: 12, color: '#aaa' }}>
             <div
@@ -345,7 +380,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                 background: engineReady ? '#22c55e' : '#ef4444',
               }}
             />
-            <span>{engineReady ? `Engine Ready · ${engineInfo?.version ? (engineInfo.version.startsWith('v') ? engineInfo.version : 'v' + engineInfo.version) : ''}` : 'Engine Offline'}</span>
+            <span style={{ fontWeight: 600 }}>{engineReady ? (engineInfo?.version ? (engineInfo.version.startsWith('v') ? engineInfo.version : 'v' + engineInfo.version) : '') : 'Offline'}</span>
           </div>
         </div>
       </div>
@@ -357,55 +392,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             <EngineStatusPanel onReady={(info) => { setEngineReady(true); setEngineInfo(info); }} />
           ) : (
             <>
-              {engineReady && engineInfo && githubVersion && isNewerVersion(githubVersion, engineInfo.version) && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    background: 'rgba(241, 196, 15, 0.1)',
-                    border: '1px solid rgba(241, 196, 15, 0.3)',
-                    marginBottom: 12,
-                    fontSize: 13,
-                    color: '#f1c40f',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Sparkles size={14} />
-                    <span>
-                      New version available: <strong>{githubVersion}</strong>
-                    </span>
-                  </div>
-                  <button
-                    onClick={handleUpdateEngine}
-                    disabled={isUpdating}
-                    style={{
-                      background: '#f1c40f',
-                      color: '#0f0f0f',
-                      border: 'none',
-                      padding: '4px 12px',
-                      borderRadius: 12,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: isUpdating ? 'default' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                    }}
-                  >
-                    {isUpdating ? (
-                      <>
-                        <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
-                        <span>Updating...</span>
-                      </>
-                    ) : (
-                      <span>Update Now</span>
-                    )}
-                  </button>
-                </div>
-              )}
+
               {!fileAccessAllowed && (
                 <div
                   style={{
