@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![GitHub release](https://img.shields.io/badge/version-v0.2.6-red?style=for-the-badge&logo=youtube)
+![GitHub release](https://img.shields.io/badge/version-v0.2.41-red?style=for-the-badge&logo=youtube)
 ![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Chrome MV3](https://img.shields.io/badge/Chrome_Extension-MV3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)
