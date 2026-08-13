@@ -1,60 +1,74 @@
 @echo off
-title Fuk-YT - Git Push
-cd /d "C:\Users\soumy\Documents\Fuk-YT"
+setlocal enabledelayedexpansion
+title Fuk-YT - Automated Git Push & Auto-Release
+cd /d "%~dp0"
 
-echo ========================================
-echo        Fuk-YT - Git Push
-echo ========================================
+echo ========================================================
+echo       Fuk-YT - Automated Git Push & Release
+echo ========================================================
 echo.
 
-echo [1/4] Checking Git...
-git --version
+echo [1/5] Checking Git installation...
+git --version >nul 2>&1
 if errorlevel 1 (
-    echo.
     echo ERROR: Git is not installed or not in PATH.
     pause
     exit /b 1
 )
 
 echo.
-echo [2/4] Adding files...
+echo [2/5] Staging modified files...
 git add .
-if errorlevel 1 (
-    echo ERROR: git add failed.
-    pause
-    exit /b 1
-)
 
 echo.
-echo [3/4] Creating commit...
+echo [3/5] Creating commit...
 git diff --cached --quiet
 if errorlevel 1 (
-    git commit -m "Update"
+    git commit -m "Update: auto-build & release sync"
     if errorlevel 1 (
         echo ERROR: Commit failed.
         pause
         exit /b 1
     )
 ) else (
-    echo No new changes to commit.
+    echo No uncommitted changes found.
 )
 
 echo.
-echo [4/4] Pushing to GitHub...
+echo [4/5] Pushing changes to GitHub main branch...
 git push -u origin main
 if errorlevel 1 (
     echo.
-    echo ========================================
-    echo          PUSH FAILED
-    echo ========================================
-    echo.
+    echo ========================================================
+    echo             GIT PUSH TO MAIN FAILED
+    echo ========================================================
     pause
     exit /b 1
 )
 
 echo.
-echo ========================================
-echo          PUSH SUCCESSFUL
-echo ========================================
+echo [5/5] Generating Auto-Version Tag for GitHub Release...
+
+for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "$t = (git describe --tags --abbrev=0 2>$null); if (-not $t) { $t = 'v0.2.0' }; $parts = ($t -replace '^v','').Split('.'); [int]$patch = [int]$parts[2] + 1; Write-Output ('v' + $parts[0] + '.' + $parts[1] + '.' + $patch)"`) do (
+    set "NEW_TAG=%%i"
+)
+
+if "%NEW_TAG%"=="" set "NEW_TAG=v0.2.1"
+
+echo.
+echo Auto-Generated Release Tag: !NEW_TAG!
+echo Creating local tag !NEW_TAG!...
+git tag -a "!NEW_TAG!" -m "Release !NEW_TAG! (Automated Extension & Engine Build)"
+
+echo Pushing tag !NEW_TAG! to GitHub...
+git push origin "!NEW_TAG!"
+
+echo.
+echo ========================================================
+echo    PUSH & RELEASE TRIGGER SUCCESSFUL!
+echo    Release Tag: !NEW_TAG!
+echo    GitHub Actions is building fuk-yt-extension.zip
+echo    and publishing to GitHub Releases automatically!
+echo ========================================================
 echo.
 pause
