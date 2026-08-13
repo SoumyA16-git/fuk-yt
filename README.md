@@ -76,10 +76,12 @@
 
 ---
 
-### Step 2: Run 1-Click Engine Installer
+### Step 2: Run 1-Click Engine Installer (One-Time Setup)
 1. Open the extracted folder.
 2. Double-click `install.bat` (or right-click → **Run as administrator**).
 3. The script will automatically configure the local Go native engine and register it in Windows Registry.
+
+> 💡 **Note**: You only need to run `install.bat` **ONCE** during initial setup. Windows Registry keeps the engine registered permanently, so after any PC restart, Chrome automatically connects to the downloader — no need to run `install.bat` again!
 
 ---
 
