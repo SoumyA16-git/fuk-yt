@@ -94,13 +94,13 @@ func loadConfig() (*Config, error) {
 	var downloadRoot string
 	if runtime.GOOS == "windows" {
 		if dDir, err := getWindowsDownloadsDir(); err == nil && dDir != "" {
-			downloadRoot = filepath.Join(dDir, "FUK-YT")
+			downloadRoot = dDir
 		}
 	}
 	if downloadRoot == "" {
 		downloadsDir := filepath.Join(userProfile, "Downloads")
 		if _, err := os.Stat(downloadsDir); err == nil {
-			downloadRoot = filepath.Join(downloadsDir, "FUK-YT")
+			downloadRoot = downloadsDir
 		} else {
 			downloadRoot = filepath.Join(localData, "FUK-YT", "staging")
 		}

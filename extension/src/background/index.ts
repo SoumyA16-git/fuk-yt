@@ -232,6 +232,30 @@ async function handleMessage(message: { type: string; payload?: unknown }): Prom
       });
     }
 
+    case 'DOWNLOAD_THUMBNAIL': {
+      const { videoId, filename } = (payload ?? {}) as { videoId?: string; filename?: string };
+      if (!videoId || !filename) throw new Error('DOWNLOAD_THUMBNAIL: missing videoId or filename');
+
+      let url = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+      
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        if (!res.ok) {
+          url = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        }
+      } catch {
+        url = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      }
+
+      await chrome.downloads.download({
+        url,
+        filename,
+        conflictAction: 'overwrite',
+        saveAs: false,
+      });
+      return null;
+    }
+
     default:
       throw new Error(`Unknown message type: ${type}`);
   }
@@ -245,11 +269,7 @@ async function registerBrowserDownload(filepath: string, jobType: string) {
   try {
     const fileUrl = 'file:///' + filepath.replace(/\\/g, '/');
     const baseName = filepath.replace(/\\/g, '/').split('/').pop() || 'download';
-    let subfolder = 'Videos';
-    if (jobType === 'audio') subfolder = 'Audio';
-    if (jobType === 'clip') subfolder = 'Clips';
-
-    const relPath = 'FUK-YT/' + subfolder + '/' + baseName;
+    const relPath = baseName;
 
     chrome.downloads.download({
       url: fileUrl,

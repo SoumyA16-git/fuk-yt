@@ -70,7 +70,7 @@ func (m *Manager) ResolvePath(jobType JobType, filename string) (string, error) 
 		return "", err
 	}
 
-	outDir := filepath.Join(m.downloadRoot, jobType.Subfolder())
+	outDir := m.downloadRoot
 	outPath := filepath.Join(outDir, safe)
 
 	// SEC-03: ensure resolved path stays within downloadRoot
@@ -85,13 +85,16 @@ func (m *Manager) ResolvePath(jobType JobType, filename string) (string, error) 
 // EnsureDir creates the output directory (and parents) if they don't exist.
 // Called by DownloadService before writing (FR-45).
 func (m *Manager) EnsureDir(jobType JobType) error {
-	dir := filepath.Join(m.downloadRoot, jobType.Subfolder())
-	return os.MkdirAll(dir, 0o755)
+	return os.MkdirAll(m.downloadRoot, 0o755)
 }
 
 // TempPath returns a temp file path in the temp directory (§20).
 func (m *Manager) TempPath(suffix string) string {
-	tempDir := filepath.Join(m.downloadRoot, "..", "temp")
+	localData := os.Getenv("LOCALAPPDATA")
+	if localData == "" {
+		localData = filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Local")
+	}
+	tempDir := filepath.Join(localData, "FUK-YT", "temp")
 	_ = os.MkdirAll(tempDir, 0o755)
 	return filepath.Join(tempDir, fmt.Sprintf(".fuk-yt-tmp-%s%s", randomHex(8), suffix))
 }
