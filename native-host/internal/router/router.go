@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"path/filepath"
+	"syscall"
 
 	"github.com/fukyt/host/internal/ffmpeg"
 	"github.com/fukyt/host/internal/host"
@@ -326,10 +326,12 @@ func openFileCmd(path string) {
 }
 
 func openFolderCmd(path string) {
-	// SIMPLE: just open the parent directory — explorer.exe <dir> always works.
-	// All /select, approaches fail on filenames with brackets/spaces/@ due to
-	// Windows argument-quoting hell between Go exec, cmd.exe, and Explorer.
-	dir := filepath.Dir(path)
-	logging.Info("router: openFolderCmd", map[string]interface{}{"path": path, "dir": dir})
-	_ = exec.Command("explorer.exe", dir).Start()
+	// Using SysProcAttr.CmdLine bypasses Go's automatic argument escaping which
+	// otherwise corrupts the /select,<path> argument if the path contains spaces
+	// or brackets (like "[1080p]").
+	cmd := exec.Command("explorer.exe")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		CmdLine: fmt.Sprintf(`explorer.exe /select,"%s"`, path),
+	}
+	_ = cmd.Start()
 }
