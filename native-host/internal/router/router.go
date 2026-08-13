@@ -324,5 +324,8 @@ func openFileCmd(path string) {
 }
 
 func openFolderCmd(path string) {
-	_ = exec.Command("cmd", "/c", fmt.Sprintf(`explorer /select,"%s"`, path)).Start()
+	// Pass /select,<path> as a SINGLE argument directly to explorer.exe.
+	// Do NOT go through cmd /c — shell quoting corrupts the argument and
+	// causes Explorer to open the root window instead of selecting the file.
+	_ = exec.Command("explorer.exe", "/select,"+path).Start()
 }
