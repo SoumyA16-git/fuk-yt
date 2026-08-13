@@ -3,6 +3,7 @@ import { Download, Loader2, AlertCircle, HardDrive, Sparkles } from 'lucide-reac
 import type { FormatInfo, DownloadRequest, Job, VideoInfo } from '@/types';
 import { ProgressIndicator } from './ProgressIndicator';
 import { NativeClient } from '@/services/nativeClient';
+import { useTheme } from '@/hooks/useTheme';
 
 const QUALITY_LABEL_ORDER = [
   'Best',
@@ -164,6 +165,8 @@ export function VideoPanel({
     }
   }
 
+  const theme = useTheme();
+
   if (formatsError) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fca5a5', fontSize: 12 }}>
@@ -175,7 +178,7 @@ export function VideoPanel({
 
   if (formatsLoading || !formats) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', fontSize: 12, color: '#888' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', fontSize: 12, color: theme.textSecondary, transition: theme.transition }}>
         <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
         <span>Fetching high-res formats...</span>
       </div>
@@ -183,7 +186,7 @@ export function VideoPanel({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, transition: theme.transition }}>
       {/* Main Horizontal Controls Row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         
@@ -194,15 +197,15 @@ export function VideoPanel({
               <img
                 src={videoInfo.thumbnail}
                 alt="Thumbnail"
-                style={{ width: 48, height: 27, borderRadius: 4, objectFit: 'cover', background: '#222', flexShrink: 0 }}
+                style={{ width: 48, height: 27, borderRadius: 4, objectFit: 'cover', background: theme.isDark ? '#222' : '#eee', flexShrink: 0 }}
               />
             )}
             <div style={{ overflow: 'hidden' }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#f1f1f1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={videoInfo.title}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: theme.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: theme.transition }} title={videoInfo.title}>
                 {videoInfo.title}
               </div>
               {videoInfo.channel && (
-                <div style={{ fontSize: 12, color: '#aaa', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 12, color: theme.textSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: theme.transition }}>
                   {videoInfo.channel}
                 </div>
               )}
@@ -214,8 +217,8 @@ export function VideoPanel({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', flexGrow: 1 }}>
           
           {/* Quality Dropdown Pill */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255, 255, 255, 0.1)', height: 36, padding: '0 14px', borderRadius: 18 }}>
-            <span style={{ fontSize: 13, color: '#aaa', fontWeight: 500 }}>Quality</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.pillBg, height: 36, padding: '0 14px', borderRadius: 18, transition: theme.transition }}>
+            <span style={{ fontSize: 13, color: theme.textSecondary, fontWeight: 500, transition: theme.transition }}>Quality</span>
             <select
               id="fyk-quality-select"
               value={selectedQuality}
@@ -224,15 +227,16 @@ export function VideoPanel({
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#f1f1f1',
+                color: theme.text,
                 fontSize: 14,
                 fontWeight: 500,
                 cursor: 'pointer',
                 outline: 'none',
+                transition: theme.transition,
               }}
             >
               {allQualities.map((q) => (
-                <option key={q.value} value={q.value} style={{ background: '#1f1f1f', color: '#f1f1f1' }}>
+                <option key={q.value} value={q.value} style={{ background: theme.dropdownBg, color: theme.dropdownText }}>
                   {q.label}
                 </option>
               ))}
@@ -240,35 +244,44 @@ export function VideoPanel({
           </div>
 
           {/* Container Selector Pills */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'rgba(255, 255, 255, 0.1)', height: 36, padding: 3, borderRadius: 18 }}>
-            {availableContainers.map((c) => (
-              <button
-                key={c}
-                id={`fyk-format-btn-${c}`}
-                onClick={() => setSelectedFormat(c)}
-                disabled={isActive}
-                style={{
-                  height: 30,
-                  padding: '0 14px',
-                  borderRadius: 15,
-                  border: 'none',
-                  background: selectedFormat === c ? '#f1f1f1' : 'transparent',
-                  color: selectedFormat === c ? '#0f0f0f' : '#aaa',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'background-color 0.15s ease',
-                }}
-              >
-                {c.toUpperCase()}
-              </button>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: theme.pillBg, height: 36, padding: 3, borderRadius: 18, transition: theme.transition }}>
+            {availableContainers.map((c) => {
+              const isSelected = selectedFormat === c;
+              return (
+                <button
+                  key={c}
+                  id={`fyk-format-btn-${c}`}
+                  onClick={() => setSelectedFormat(c)}
+                  disabled={isActive}
+                  style={{
+                    height: 30,
+                    padding: '0 14px',
+                    borderRadius: 15,
+                    border: 'none',
+                    background: isSelected ? theme.pillActiveBg : 'transparent',
+                    color: isSelected ? theme.pillActiveText : theme.textSecondary,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    transition: theme.transition,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) e.currentTarget.style.color = theme.text;
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) e.currentTarget.style.color = theme.textSecondary;
+                  }}
+                >
+                  {c.toUpperCase()}
+                </button>
+              );
+            })}
           </div>
 
           {/* Estimated Size Badge */}
           {estimatedSize && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 14px', borderRadius: 18, background: 'rgba(255, 255, 255, 0.05)', fontSize: 13, color: '#aaa' }}>
-              <HardDrive size={13} color="#aaa" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 14px', borderRadius: 18, background: theme.cardSubtleBg, fontSize: 13, color: theme.textSecondary, transition: theme.transition }}>
+              <HardDrive size={13} color={theme.textSecondary} />
               <span>~{estimatedSize}</span>
             </div>
           )}
@@ -287,21 +300,21 @@ export function VideoPanel({
             padding: '0 20px',
             borderRadius: 18,
             border: 'none',
-            background: canDownload ? '#cc0000' : 'rgba(255, 255, 255, 0.1)',
-            color: canDownload ? '#ffffff' : '#666666',
+            background: canDownload ? theme.primaryRed : theme.pillBg,
+            color: canDownload ? '#ffffff' : theme.textMuted,
             fontSize: 14,
             fontWeight: 500,
             cursor: canDownload ? 'pointer' : 'not-allowed',
-            transition: 'background-color 0.15s ease',
+            transition: theme.transition,
             whiteSpace: 'nowrap',
             flexShrink: 0,
             marginLeft: 'auto',
           }}
           onMouseEnter={(e) => {
-            if (canDownload) (e.currentTarget as HTMLElement).style.background = '#ff0000';
+            if (canDownload) (e.currentTarget as HTMLElement).style.background = theme.primaryRedHover;
           }}
           onMouseLeave={(e) => {
-            if (canDownload) (e.currentTarget as HTMLElement).style.background = '#cc0000';
+            if (canDownload) (e.currentTarget as HTMLElement).style.background = theme.primaryRed;
           }}
         >
           {isActive ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={15} />}

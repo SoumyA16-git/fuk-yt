@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useTheme } from '@/hooks/useTheme';
 
 const MIN_CLIP_LENGTH = 1; // seconds (CLIP-03)
 
@@ -81,6 +82,7 @@ export function ClipTimeline({
   // Click on rail — CLIP-09: only handle clicks on the handle grab areas, not the rail itself
   // So rail itself does NOT intercept clicks (no seek behavior)
 
+  const theme = useTheme();
   const startPct = toPercent(selection.startTime);
   const endPct = toPercent(selection.endTime);
   const playPct = toPercent(playbackTime);
@@ -94,24 +96,24 @@ export function ClipTimeline({
       {/* Background rail */}
       <div
         ref={railRef}
-        className="absolute inset-x-0 rounded-full bg-zinc-700"
-        style={{ top: 16, height: 8 }}
+        className="absolute inset-x-0 rounded-full"
+        style={{ top: 16, height: 8, background: theme.timelineRail, transition: theme.transition }}
       >
         {/* Unselected zones */}
         <div
-          className="absolute inset-y-0 left-0 rounded-l-full bg-zinc-600"
-          style={{ width: `${startPct}%` }}
+          className="absolute inset-y-0 left-0 rounded-l-full"
+          style={{ width: `${startPct}%`, background: theme.isDark ? '#52525b' : '#cbd5e1' }}
         />
         {/* Selection band (CLIP-05) */}
         <div
           id="fyk-clip-selection-band"
-          className="absolute inset-y-0 bg-red-500/70"
-          style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
+          className="absolute inset-y-0"
+          style={{ left: `${startPct}%`, width: `${endPct - startPct}%`, background: '#ef4444' }}
         />
         {/* Unselected right zone */}
         <div
-          className="absolute inset-y-0 right-0 rounded-r-full bg-zinc-600"
-          style={{ width: `${100 - endPct}%` }}
+          className="absolute inset-y-0 right-0 rounded-r-full"
+          style={{ width: `${100 - endPct}%`, background: theme.isDark ? '#52525b' : '#cbd5e1' }}
         />
       </div>
 
@@ -121,14 +123,14 @@ export function ClipTimeline({
         className="absolute z-10 pointer-events-none"
         style={{ left: `${playPct}%`, top: 8, width: 2, height: 24, marginLeft: -1 }}
       >
-        <div className="w-full h-full bg-white/60 rounded-full" />
+        <div className="w-full h-full rounded-full" style={{ background: theme.isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }} />
       </div>
 
       {/* Start handle (CLIP-01) */}
       <button
         id="fyk-clip-start-handle"
         aria-label={`Clip start: ${selection.startTime.toFixed(1)}s`}
-        className="absolute z-20 flex items-center justify-center rounded-full bg-white shadow-md border-2 border-red-500 cursor-ew-resize hover:scale-110 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+        className="absolute z-20 flex items-center justify-center rounded-full shadow-md cursor-ew-resize hover:scale-110 transition-transform focus:outline-none"
         style={{
           left: `${startPct}%`,
           top: 10,
@@ -136,6 +138,8 @@ export function ClipTimeline({
           height: 20,
           marginLeft: -10,
           touchAction: 'none',
+          background: '#ffffff',
+          border: '2px solid #ef4444',
         }}
         onMouseDown={(e) => {
           e.preventDefault();
@@ -147,7 +151,7 @@ export function ClipTimeline({
       <button
         id="fyk-clip-end-handle"
         aria-label={`Clip end: ${selection.endTime.toFixed(1)}s`}
-        className="absolute z-20 flex items-center justify-center rounded-full bg-white shadow-md border-2 border-red-500 cursor-ew-resize hover:scale-110 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+        className="absolute z-20 flex items-center justify-center rounded-full shadow-md cursor-ew-resize hover:scale-110 transition-transform focus:outline-none"
         style={{
           left: `${endPct}%`,
           top: 10,
@@ -155,6 +159,8 @@ export function ClipTimeline({
           height: 20,
           marginLeft: -10,
           touchAction: 'none',
+          background: '#ffffff',
+          border: '2px solid #ef4444',
         }}
         onMouseDown={(e) => {
           e.preventDefault();

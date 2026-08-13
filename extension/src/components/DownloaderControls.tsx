@@ -7,6 +7,7 @@ import { VideoPanel } from './VideoPanel';
 import { AudioPanel } from './AudioPanel';
 import { ClipPanel } from './ClipPanel';
 import { ThumbnailPanel } from './ThumbnailPanel';
+import { useTheme } from '@/hooks/useTheme';
 import type { VideoMetadataDom } from '@/adapter/YouTubeAdapter';
 
 const GithubIcon = ({ size = 14 }: { size?: number }) => (
@@ -223,21 +224,25 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
     };
   }, []);
 
+  const theme = useTheme();
+
   return (
     <div
       id="fyk-downloader-controls"
       style={{
-        background: '#0f0f0f',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        background: theme.cardBg,
+        border: `1px solid ${theme.border}`,
         borderRadius: 12,
         fontFamily: '"Roboto", system-ui, -apple-system, sans-serif',
         fontSize: 14,
-        color: '#f1f1f1',
+        color: theme.text,
         boxSizing: 'border-box',
         width: '100%',
         margin: '12px 0 16px 0',
         padding: '12px 16px',
         userSelect: 'none',
+        transition: theme.transition,
+        boxShadow: theme.isDark ? 'none' : '0 1px 4px rgba(0, 0, 0, 0.05)',
       }}
     >
       {/* Header Row: YouTube Native Pill Tabs + Engine Status */}
@@ -248,7 +253,8 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
           justifyContent: 'space-between',
           marginBottom: 12,
           paddingBottom: 10,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          borderBottom: `1px solid ${theme.divider}`,
+          transition: theme.transition,
         }}
       >
         {/* Sleek YouTube Pill Tabs */}
@@ -269,12 +275,22 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                   padding: '0 16px',
                   borderRadius: 18,
                   border: 'none',
-                  background: isSelected ? '#f1f1f1' : 'rgba(255, 255, 255, 0.1)',
-                  color: isSelected ? '#0f0f0f' : '#f1f1f1',
+                  background: isSelected ? theme.pillActiveBg : theme.pillBg,
+                  color: isSelected ? theme.pillActiveText : theme.text,
                   fontSize: 14,
                   fontWeight: 500,
                   cursor: 'pointer',
-                  transition: 'background-color 0.15s ease',
+                  transition: theme.transition,
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = theme.pillBgHover;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = theme.pillBg;
+                  }
                 }}
               >
                 {icon}
@@ -298,22 +314,22 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
               height: 32,
               padding: '0 12px',
               borderRadius: 16,
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#f1f1f1',
+              background: theme.cardSubtleBg,
+              border: `1px solid ${theme.cardSubtleBorder}`,
+              color: theme.text,
               textDecoration: 'none',
               fontSize: 12,
               fontWeight: 500,
-              transition: 'all 0.2s ease',
+              transition: theme.transition,
               cursor: 'pointer',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+              e.currentTarget.style.background = theme.pillBgHover;
+              e.currentTarget.style.borderColor = theme.border;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.background = theme.cardSubtleBg;
+              e.currentTarget.style.borderColor = theme.cardSubtleBorder;
             }}
           >
             <GithubIcon size={14} />
@@ -322,7 +338,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 3,
-                borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+                borderLeft: `1px solid ${theme.border}`,
                 paddingLeft: 8,
                 marginLeft: 2,
                 color: '#f1c40f',
@@ -372,7 +388,21 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
           )}
 
           {/* Engine Status Badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', borderRadius: 16, background: 'rgba(255, 255, 255, 0.05)', fontSize: 12, color: '#aaa' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              height: 32,
+              padding: '0 12px',
+              borderRadius: 16,
+              background: theme.cardSubtleBg,
+              border: `1px solid ${theme.cardSubtleBorder}`,
+              fontSize: 12,
+              color: theme.textSecondary,
+              transition: theme.transition,
+            }}
+          >
             <div
               style={{
                 width: 7,
@@ -381,7 +411,15 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                 background: engineReady ? '#22c55e' : '#ef4444',
               }}
             />
-            <span style={{ fontWeight: 600 }}>{engineReady ? (engineInfo?.version ? (engineInfo.version.startsWith('v') ? engineInfo.version : 'v' + engineInfo.version) : '') : 'Offline'}</span>
+            <span style={{ fontWeight: 600 }}>
+              {engineReady
+                ? engineInfo?.version
+                  ? engineInfo.version.startsWith('v')
+                    ? engineInfo.version
+                    : 'v' + engineInfo.version
+                  : ''
+                : 'Offline'}
+            </span>
           </div>
         </div>
       </div>
@@ -393,7 +431,6 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             <EngineStatusPanel onReady={(info) => { setEngineReady(true); setEngineInfo(info); }} />
           ) : (
             <>
-
               {!fileAccessAllowed && (
                 <div
                   style={{
@@ -402,11 +439,12 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                     justifyContent: 'space-between',
                     padding: '8px 16px',
                     borderRadius: 8,
-                    background: 'rgba(52, 152, 219, 0.1)',
-                    border: '1px solid rgba(52, 152, 219, 0.3)',
+                    background: theme.alertTipBg,
+                    border: `1px solid ${theme.alertTipBorder}`,
                     marginBottom: 12,
                     fontSize: 12,
-                    color: '#3498db',
+                    color: theme.alertTipText,
+                    transition: theme.transition,
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -420,7 +458,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                       chrome.runtime.sendMessage({ type: 'OPEN_EXTENSIONS_PAGE' });
                     }}
                     style={{
-                      background: '#3498db',
+                      background: theme.accentBlue,
                       color: '#fff',
                       border: 'none',
                       padding: '4px 12px',

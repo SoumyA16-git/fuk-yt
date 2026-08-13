@@ -4,6 +4,7 @@ import type { FormatInfo, ClipRequest, Job, VideoInfo } from '@/types';
 import { ClipTimeline, type ClipSelection } from './ClipTimeline';
 import { ProgressIndicator } from './ProgressIndicator';
 import { NativeClient } from '@/services/nativeClient';
+import { useTheme } from '@/hooks/useTheme';
 import { getPlaybackTime, getVideoDuration, pauseVideo, seekVideo } from '@/adapter/YouTubeAdapter';
 
 function parseTimestamp(input: string): number {
@@ -178,6 +179,8 @@ export function ClipPanel({
 
   const clipDuration = selection.endTime - selection.startTime;
 
+  const theme = useTheme();
+
   if (formatsError) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fca5a5', fontSize: 12 }}>
@@ -189,7 +192,7 @@ export function ClipPanel({
 
   if (formatsLoading || !formats) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', fontSize: 12, color: '#888' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', fontSize: 12, color: theme.textSecondary, transition: theme.transition }}>
         <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
         <span>Preparing timeline...</span>
       </div>
@@ -197,7 +200,7 @@ export function ClipPanel({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, transition: theme.transition }}>
       {/* Timeline Bar */}
       <ClipTimeline
         duration={duration}
@@ -211,8 +214,8 @@ export function ClipPanel({
         
         {/* Left: Start / End Inputs */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <span style={{ fontSize: 11, color: '#888' }}>Start</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.pillBg, padding: '3px 8px', borderRadius: 16, border: `1px solid ${theme.border}`, transition: theme.transition }}>
+            <span style={{ fontSize: 11, color: theme.textSecondary }}>Start</span>
             <input
               id="fyk-clip-start-input"
               type="text"
@@ -221,12 +224,12 @@ export function ClipPanel({
               onBlur={commitStartText}
               onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
               disabled={isActive}
-              style={{ width: 44, background: 'transparent', border: 'none', color: '#fff', fontSize: 12, fontWeight: 600, textAlign: 'center', outline: 'none' }}
+              style={{ width: 44, background: 'transparent', border: 'none', color: theme.text, fontSize: 12, fontWeight: 600, textAlign: 'center', outline: 'none' }}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <span style={{ fontSize: 11, color: '#888' }}>End</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.pillBg, padding: '3px 8px', borderRadius: 16, border: `1px solid ${theme.border}`, transition: theme.transition }}>
+            <span style={{ fontSize: 11, color: theme.textSecondary }}>End</span>
             <input
               id="fyk-clip-end-input"
               type="text"
@@ -235,19 +238,19 @@ export function ClipPanel({
               onBlur={commitEndText}
               onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
               disabled={isActive}
-              style={{ width: 44, background: 'transparent', border: 'none', color: '#fff', fontSize: 12, fontWeight: 600, textAlign: 'center', outline: 'none' }}
+              style={{ width: 44, background: 'transparent', border: 'none', color: theme.text, fontSize: 12, fontWeight: 600, textAlign: 'center', outline: 'none' }}
             />
           </div>
 
-          <div style={{ padding: '4px 10px', borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', fontSize: 11, color: '#aaa' }}>
-            Duration: <strong style={{ color: '#fff' }}>{formatTimestamp(clipDuration)}</strong>
+          <div style={{ padding: '4px 10px', borderRadius: 16, background: theme.cardSubtleBg, border: `1px solid ${theme.cardSubtleBorder}`, fontSize: 11, color: theme.textSecondary, transition: theme.transition }}>
+            Duration: <strong style={{ color: theme.text }}>{formatTimestamp(clipDuration)}</strong>
           </div>
 
           <button
             id="fyk-clip-reset-btn"
             onClick={handleReset}
             disabled={isActive}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: theme.textSecondary, fontSize: 11, cursor: 'pointer', transition: theme.transition }}
           >
             <RotateCcw size={11} />
             <span>Reset</span>
@@ -267,12 +270,18 @@ export function ClipPanel({
               padding: '8px 18px',
               borderRadius: 24,
               border: 'none',
-              background: 'linear-gradient(135deg, #ff0000, #cc0000)',
+              background: theme.primaryRed,
               color: '#ffffff',
               fontSize: 12,
               fontWeight: 700,
               cursor: isActive ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 15px rgba(255, 0, 0, 0.35)',
+              transition: theme.transition,
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) e.currentTarget.style.background = theme.primaryRedHover;
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) e.currentTarget.style.background = theme.primaryRed;
             }}
           >
             <Scissors size={13} />
@@ -289,12 +298,19 @@ export function ClipPanel({
               gap: 6,
               padding: '8px 18px',
               borderRadius: 24,
-              border: '1px solid rgba(255,255,255,0.15)',
-              background: 'rgba(255,255,255,0.06)',
-              color: '#ffffff',
+              border: `1px solid ${theme.border}`,
+              background: theme.pillBg,
+              color: theme.text,
               fontSize: 12,
               fontWeight: 700,
               cursor: isActive ? 'not-allowed' : 'pointer',
+              transition: theme.transition,
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) e.currentTarget.style.background = theme.pillBgHover;
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) e.currentTarget.style.background = theme.pillBg;
             }}
           >
             <Download size={13} />

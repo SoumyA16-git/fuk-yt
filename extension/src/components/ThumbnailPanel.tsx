@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Download, CheckCircle, Loader2, FolderOpen, FileImage } from 'lucide-react';
 import type { VideoInfo } from '@/types';
 import { NativeClient } from '@/services/nativeClient';
+import { useTheme } from '@/hooks/useTheme';
 
 interface ThumbnailPanelProps {
   videoId: string;
@@ -14,6 +15,7 @@ export function ThumbnailPanel({ videoId, videoInfo }: ThumbnailPanelProps) {
   const [openingFile, setOpeningFile] = useState(false);
   const [openingFolder, setOpeningFolder] = useState(false);
 
+  const theme = useTheme();
   const title = videoInfo?.title || 'Video Thumbnail';
 
   async function handleDownload() {
@@ -54,13 +56,13 @@ export function ThumbnailPanel({ videoId, videoInfo }: ThumbnailPanelProps) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '16px 0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '16px 0', transition: theme.transition }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 13, color: '#aaa' }}>Format: JPEG Image</span>
-          <span style={{ fontSize: 13, color: '#aaa' }}>Resolution: Highest Quality Available</span>
+          <span style={{ fontSize: 13, color: theme.textSecondary, transition: theme.transition }}>Format: PNG Image</span>
+          <span style={{ fontSize: 13, color: theme.textSecondary, transition: theme.transition }}>Resolution: Highest Quality Available</span>
           {savedPath && (
-            <span style={{ fontSize: 11, color: '#666', wordBreak: 'break-all' }}>
+            <span style={{ fontSize: 11, color: theme.textMuted, wordBreak: 'break-all', transition: theme.transition }}>
               {savedPath.split(/[\\/]/).pop()}
             </span>
           )}
@@ -71,13 +73,13 @@ export function ThumbnailPanel({ videoId, videoInfo }: ThumbnailPanelProps) {
             onClick={handleDownload}
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              background: '#ff0000', color: '#fff', border: 'none',
+              background: theme.primaryRed, color: '#fff', border: 'none',
               padding: '10px 20px', borderRadius: 20, fontSize: 14,
               fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-              transition: 'background-color 0.2s ease',
+              transition: theme.transition,
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#cc0000'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ff0000'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = theme.primaryRedHover; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = theme.primaryRed; }}
           >
             <Download size={16} />
             <span>Download Thumbnail</span>
@@ -87,9 +89,10 @@ export function ThumbnailPanel({ videoId, videoInfo }: ThumbnailPanelProps) {
         {downloadState === 'downloading' && (
           <button disabled style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            background: '#555', color: '#fff', border: 'none',
+            background: theme.pillBg, color: theme.textMuted, border: 'none',
             padding: '10px 20px', borderRadius: 20, fontSize: 14,
             fontWeight: 600, cursor: 'not-allowed', whiteSpace: 'nowrap',
+            transition: theme.transition,
           }}>
             <Loader2 size={16} className="animate-spin" />
             <span>Downloading...</span>
@@ -101,26 +104,27 @@ export function ThumbnailPanel({ videoId, videoInfo }: ThumbnailPanelProps) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            background: '#22c55e22', border: '1px solid #22c55e55',
-            color: '#22c55e', padding: '8px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+            background: theme.isDark ? '#22c55e22' : '#ecfdf5',
+            border: `1px solid ${theme.isDark ? '#22c55e55' : '#a7f3d0'}`,
+            color: theme.isDark ? '#22c55e' : '#059669',
+            padding: '8px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+            transition: theme.transition,
           }}>
             <CheckCircle size={15} />
             <span>Saved to Downloads folder!</span>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
             <button
               onClick={handleOpenFile}
               disabled={openingFile}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155',
-                padding: '8px 14px', borderRadius: 8, fontSize: 13,
+                height: 36, padding: '0 18px', borderRadius: 18, border: 'none',
+                background: '#22c55e', color: '#000', fontSize: 14,
                 fontWeight: 500, cursor: openingFile ? 'not-allowed' : 'pointer',
-                transition: 'background 0.15s',
+                transition: theme.transition,
               }}
-              onMouseEnter={(e) => { if (!openingFile) e.currentTarget.style.background = '#334155'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#1e293b'; }}
             >
               <FileImage size={14} />
               <span>Open File</span>
@@ -131,13 +135,13 @@ export function ThumbnailPanel({ videoId, videoInfo }: ThumbnailPanelProps) {
               disabled={openingFolder}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155',
-                padding: '8px 14px', borderRadius: 8, fontSize: 13,
+                height: 36, padding: '0 18px', borderRadius: 18, border: 'none',
+                background: theme.pillBg, color: theme.text, fontSize: 14,
                 fontWeight: 500, cursor: openingFolder ? 'not-allowed' : 'pointer',
-                transition: 'background 0.15s',
+                transition: theme.transition,
               }}
-              onMouseEnter={(e) => { if (!openingFolder) e.currentTarget.style.background = '#334155'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#1e293b'; }}
+              onMouseEnter={(e) => { if (!openingFolder) e.currentTarget.style.background = theme.pillBgHover; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = theme.pillBg; }}
             >
               <FolderOpen size={14} />
               <span>Open Folder</span>
@@ -147,13 +151,13 @@ export function ThumbnailPanel({ videoId, videoInfo }: ThumbnailPanelProps) {
               onClick={() => { setDownloadState('idle'); setSavedPath(null); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                background: 'transparent', color: '#64748b', border: '1px solid #334155',
-                padding: '8px 14px', borderRadius: 8, fontSize: 13,
-                fontWeight: 500, cursor: 'pointer',
-                transition: 'background 0.15s',
+                height: 36, padding: '0 16px', borderRadius: 18, border: 'none',
+                background: 'transparent', color: theme.textSecondary, fontSize: 13,
+                fontWeight: 500, cursor: 'pointer', marginLeft: 'auto',
+                transition: theme.transition,
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#1e293b'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = theme.text; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = theme.textSecondary; }}
             >
               <Download size={14} />
               <span>Download Again</span>
@@ -164,3 +168,4 @@ export function ThumbnailPanel({ videoId, videoInfo }: ThumbnailPanelProps) {
     </div>
   );
 }
+

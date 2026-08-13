@@ -3,6 +3,7 @@ import { Loader2, CheckCircle, XCircle, FolderOpen, FileDown, RotateCcw, X } fro
 import type { Job, ErrorCode } from '@/types';
 import { ERROR_MESSAGES, RETRYABLE_ERRORS } from '@/types';
 import { NativeClient } from '@/services/nativeClient';
+import { useTheme } from '@/hooks/useTheme';
 
 interface ProgressIndicatorProps {
   job: Job;
@@ -34,6 +35,7 @@ function formatEta(sec: number): string {
  * ProgressIndicator — Sleek YouTube Glass Progress Card
  */
 export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: ProgressIndicatorProps) {
+  const theme = useTheme();
   const isActive = job.state === 'downloading' || job.state === 'processing';
 
   async function handleOpenFile() {
@@ -59,18 +61,19 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
         marginTop: 10,
         padding: '12px 14px',
         borderRadius: 12,
-        background: 'rgba(255, 255, 255, 0.04)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        background: theme.cardSubtleBg,
+        border: `1px solid ${theme.cardSubtleBorder}`,
         fontSize: 12,
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
+        transition: theme.transition,
       }}
     >
       {/* Status Header Row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {isActive && <Loader2 size={14} style={{ color: '#a855f7', animation: 'spin 1s linear infinite' }} />}
+          {isActive && <Loader2 size={14} style={{ color: theme.accentBlue, animation: 'spin 1s linear infinite' }} />}
           {job.state === 'done' && <CheckCircle size={14} color="#22c55e" />}
           {job.state === 'failed' && <XCircle size={14} color="#ef4444" />}
           
@@ -78,7 +81,8 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
             fontWeight: 600,
             color: job.state === 'done' ? '#22c55e' :
                    job.state === 'failed' ? '#ef4444' :
-                   job.state === 'cancelled' ? '#888' : '#f1f1f1'
+                   job.state === 'cancelled' ? theme.textMuted : theme.text,
+            transition: theme.transition,
           }}>
             {job.state === 'downloading' ? 'Downloading' :
              job.state === 'processing' ? 'Processing File...' :
@@ -90,13 +94,13 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
 
         {/* Stats (Speed / ETA / Bytes) */}
         {isActive && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: '#aaa' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: theme.textSecondary, transition: theme.transition }}>
             {job.speedBps !== undefined && job.speedBps !== null && <span>{formatSpeed(job.speedBps)}</span>}
             {job.etaSec !== undefined && job.etaSec !== null && <span>ETA {formatEta(job.etaSec)}</span>}
             {job.downloadedBytes !== undefined && job.downloadedBytes !== null && job.totalBytes !== undefined && job.totalBytes !== null && (
               <span>{formatBytes(job.downloadedBytes)} / {formatBytes(job.totalBytes)}</span>
             )}
-            <span style={{ color: '#fff', fontWeight: 700, minWidth: 40, textAlign: 'right' }}>
+            <span style={{ color: theme.text, fontWeight: 700, minWidth: 40, textAlign: 'right', transition: theme.transition }}>
               {percentVal.toFixed(1)}%
             </span>
           </div>
@@ -106,13 +110,13 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
       {/* Progress Bar (Active state) */}
       {isActive && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flexGrow: 1, height: 4, borderRadius: 2, background: 'rgba(255, 255, 255, 0.2)', overflow: 'hidden' }}>
+          <div style={{ flexGrow: 1, height: 4, borderRadius: 2, background: theme.isDark ? 'rgba(255, 255, 255, 0.2)' : '#e5e5e5', overflow: 'hidden', transition: theme.transition }}>
             <div
               id="fyk-progress-bar-fill"
               style={{
                 height: '100%',
                 borderRadius: 2,
-                background: '#ff0000',
+                background: theme.primaryRed,
                 width: `${Math.min(100, Math.max(0, percentVal))}%`,
                 transition: 'width 0.25s ease',
               }}
@@ -131,14 +135,16 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
               padding: '0 14px',
               borderRadius: 16,
               border: 'none',
-              background: 'rgba(255, 255, 255, 0.1)',
-              color: '#f1f1f1',
+              background: theme.pillBg,
+              color: theme.text,
               fontSize: 13,
               fontWeight: 500,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
-              transition: 'background-color 0.15s ease',
+              transition: theme.transition,
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = theme.pillBgHover; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = theme.pillBg; }}
           >
             <X size={13} />
             <span>Cancel</span>
@@ -149,13 +155,15 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
       {/* Error Card */}
       {job.state === 'failed' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <p style={{ color: '#fca5a5', margin: 0 }}>{errorMsg}</p>
+          <p style={{ color: '#ef4444', margin: 0 }}>{errorMsg}</p>
           <div style={{ display: 'flex', gap: 8 }}>
             {isRetryable && (
               <button
                 id="fyk-retry-btn"
                 onClick={onRetry}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, height: 32, padding: '0 14px', borderRadius: 16, border: 'none', background: 'rgba(255, 255, 255, 0.1)', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, height: 32, padding: '0 14px', borderRadius: 16, border: 'none', background: theme.pillBg, color: theme.text, fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: theme.transition }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = theme.pillBgHover; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = theme.pillBg; }}
               >
                 <RotateCcw size={13} />
                 Retry
@@ -164,7 +172,7 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
             <button
               id="fyk-dismiss-btn"
               onClick={onDismiss}
-              style={{ height: 32, padding: '0 14px', borderRadius: 16, border: 'none', background: 'transparent', color: '#aaa', fontSize: 13, cursor: 'pointer' }}
+              style={{ height: 32, padding: '0 14px', borderRadius: 16, border: 'none', background: 'transparent', color: theme.textSecondary, fontSize: 13, cursor: 'pointer', transition: theme.transition }}
             >
               Dismiss
             </button>
@@ -178,7 +186,7 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
           <button
             id="fyk-open-file-btn"
             onClick={handleOpenFile}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 18, border: 'none', background: '#22c55e', color: '#000', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 18, border: 'none', background: '#22c55e', color: '#000', fontSize: 14, fontWeight: 500, cursor: 'pointer', transition: theme.transition }}
           >
             <FileDown size={14} />
             <span>Open File</span>
@@ -187,7 +195,9 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
           <button
             id="fyk-open-folder-btn"
             onClick={handleOpenFolder}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 18, border: 'none', background: 'rgba(255, 255, 255, 0.1)', color: '#f1f1f1', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 18px', borderRadius: 18, border: 'none', background: theme.pillBg, color: theme.text, fontSize: 14, fontWeight: 500, cursor: 'pointer', transition: theme.transition }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = theme.pillBgHover; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = theme.pillBg; }}
           >
             <FolderOpen size={14} />
             <span>Open Folder</span>
@@ -196,7 +206,7 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
           <button
             id="fyk-dismiss-done-btn"
             onClick={onDismiss}
-            style={{ height: 36, padding: '0 16px', borderRadius: 18, border: 'none', background: 'transparent', color: '#aaa', fontSize: 13, cursor: 'pointer', marginLeft: 'auto' }}
+            style={{ height: 36, padding: '0 16px', borderRadius: 18, border: 'none', background: 'transparent', color: theme.textSecondary, fontSize: 13, cursor: 'pointer', marginLeft: 'auto', transition: theme.transition }}
           >
             Dismiss
           </button>
@@ -206,11 +216,11 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
       {/* Cancelled */}
       {job.state === 'cancelled' && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ color: '#888' }}>{ERROR_MESSAGES.CANCELLED}</span>
+          <span style={{ color: theme.textMuted }}>{ERROR_MESSAGES.CANCELLED}</span>
           <button
             id="fyk-dismiss-cancelled-btn"
             onClick={onDismiss}
-            style={{ background: 'transparent', border: 'none', color: '#888', cursor: 'pointer' }}
+            style={{ background: 'transparent', border: 'none', color: theme.textSecondary, cursor: 'pointer' }}
           >
             ✕
           </button>
@@ -219,3 +229,4 @@ export function ProgressIndicator({ job, onCancel, onRetry, onDismiss }: Progres
     </div>
   );
 }
+

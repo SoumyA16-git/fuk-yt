@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CheckCircle, WifiOff, Loader2, Download, RefreshCw } from 'lucide-react';
 import type { EngineInfo, EngineStatus } from '@/types';
 import { NativeClient } from '@/services/nativeClient';
+import { useTheme } from '@/hooks/useTheme';
 
 // Static installer URL — §19. Replace with GitHub Releases URL at build/release time.
 const INSTALLER_URL =
@@ -25,6 +26,7 @@ export function EngineStatusPanel({ onReady }: EngineStatusProps) {
   const [pollCount, setPollCount] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const theme = useTheme();
 
   // Check engine on mount
   useEffect(() => {
@@ -117,7 +119,7 @@ export function EngineStatusPanel({ onReady }: EngineStatusProps) {
 
   if (status === 'Ready' && engineInfo) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-900/20 border border-green-700/30 text-xs text-green-400">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, background: theme.isDark ? '#22c55e22' : '#ecfdf5', border: `1px solid ${theme.isDark ? '#22c55e55' : '#a7f3d0'}`, fontSize: 12, color: theme.isDark ? '#22c55e' : '#059669', transition: theme.transition }}>
         <CheckCircle size={14} />
         <span>Engine ready · yt-dlp {engineInfo.ytDlpVersion} · ffmpeg {engineInfo.ffmpegVersion}</span>
       </div>
@@ -126,18 +128,25 @@ export function EngineStatusPanel({ onReady }: EngineStatusProps) {
 
   if (status === 'NotInstalled') {
     return (
-      <div className="flex flex-col gap-2 p-3 rounded-lg bg-zinc-800 border border-zinc-700">
-        <p className="text-xs text-zinc-300">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 8, background: theme.cardSubtleBg, border: `1px solid ${theme.border}`, transition: theme.transition }}>
+        <p style={{ fontSize: 12, color: theme.textSecondary, margin: 0 }}>
           The download engine isn't installed. Click to download the installer — then just
           double-click it to complete setup.
         </p>
         <button
           id="fyk-install-engine-btn"
           onClick={handleInstallEngine}
-          className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-500 active:bg-red-700 text-white text-xs font-semibold transition-colors"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '8px 16px', borderRadius: 6, background: theme.primaryRed,
+            color: '#fff', fontSize: 12, fontWeight: 600, border: 'none',
+            cursor: 'pointer', transition: theme.transition, width: 'fit-content',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = theme.primaryRedHover; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = theme.primaryRed; }}
         >
           <Download size={13} />
-          Install Engine
+          <span>Install Engine</span>
         </button>
       </div>
     );
@@ -145,9 +154,9 @@ export function EngineStatusPanel({ onReady }: EngineStatusProps) {
 
   if (status === 'Installing') {
     return (
-      <div className="flex flex-col gap-2 p-3 rounded-lg bg-zinc-800 border border-zinc-700">
-        <div className="flex items-center gap-2 text-xs text-zinc-300">
-          <Loader2 size={13} className="animate-spin text-zinc-400" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 8, background: theme.cardSubtleBg, border: `1px solid ${theme.border}`, transition: theme.transition }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: theme.textSecondary }}>
+          <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
           <span>
             {timedOut
               ? 'Installer not detected yet.'
@@ -155,18 +164,24 @@ export function EngineStatusPanel({ onReady }: EngineStatusProps) {
           </span>
         </div>
         {timedOut && (
-          <div className="flex flex-col gap-1.5">
-            <p className="text-xs text-zinc-400">
-              Double-click the downloaded <code className="text-zinc-200">fuk-yt-installer.exe</code>{' '}
-              to complete installation, then click below.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <p style={{ fontSize: 12, color: theme.textMuted, margin: 0 }}>
+              Double-click the downloaded <code>fuk-yt-installer.exe</code> to complete installation, then click below.
             </p>
             <button
               id="fyk-check-again-btn"
               onClick={handleCheckAgain}
-              className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-semibold transition-colors"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                padding: '6px 14px', borderRadius: 6, background: theme.pillBg,
+                color: theme.text, fontSize: 12, fontWeight: 600, border: `1px solid ${theme.border}`,
+                cursor: 'pointer', transition: theme.transition, width: 'fit-content',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = theme.pillBgHover; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = theme.pillBg; }}
             >
               <RefreshCw size={12} />
-              Check Again
+              <span>Check Again</span>
             </button>
           </div>
         )}
@@ -176,18 +191,25 @@ export function EngineStatusPanel({ onReady }: EngineStatusProps) {
 
   if (status === 'Error') {
     return (
-      <div className="flex flex-col gap-2 p-3 rounded-lg bg-zinc-800 border border-red-800/40">
-        <div className="flex items-center gap-2 text-xs text-red-400">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 8, background: theme.cardSubtleBg, border: '1px solid rgba(239, 68, 68, 0.4)', transition: theme.transition }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#ef4444' }}>
           <WifiOff size={13} />
           <span>Engine error — can't reach the download engine.</span>
         </div>
         <button
           id="fyk-engine-retry-btn"
           onClick={checkEngine}
-          className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-semibold transition-colors"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '6px 14px', borderRadius: 6, background: theme.pillBg,
+            color: theme.text, fontSize: 12, fontWeight: 600, border: `1px solid ${theme.border}`,
+            cursor: 'pointer', transition: theme.transition, width: 'fit-content',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = theme.pillBgHover; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = theme.pillBg; }}
         >
           <RefreshCw size={12} />
-          Retry
+          <span>Retry</span>
         </button>
       </div>
     );
@@ -195,9 +217,10 @@ export function EngineStatusPanel({ onReady }: EngineStatusProps) {
 
   // Updating / other states — guard status in case of unexpected value
   return (
-    <div className="flex items-center gap-2 text-xs text-zinc-400">
-      <Loader2 size={13} className="animate-spin" />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: theme.textSecondary, transition: theme.transition }}>
+      <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
       <span>Engine {(status ?? 'loading').toLowerCase()}…</span>
     </div>
   );
 }
+
