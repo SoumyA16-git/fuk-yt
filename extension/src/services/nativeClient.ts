@@ -130,4 +130,14 @@ export const NativeClient = {
   async downloadThumbnail(videoId: string, title: string): Promise<{ filepath: string }> {
     return sendNative<{ filepath: string }>('downloadThumbnail', { videoId, title });
   },
+
+  /** Open a file directly by its path (no jobId needed — e.g. thumbnails) */
+  async openFileDirect(filepath: string): Promise<void> {
+    await sendNative('openFilePath', { filepath });
+  },
+
+  /** Open the containing folder for a file by its path and highlight it */
+  async openFolderDirect(filepath: string): Promise<void> {
+    await sendNative('openFolderPath', { filepath });
+  },
 };

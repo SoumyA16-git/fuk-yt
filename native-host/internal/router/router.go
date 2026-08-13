@@ -85,6 +85,12 @@ func (r *Router) Dispatch(msg *host.RawMessage) {
 	case "downloadThumbnail":
 		err = r.handleDownloadThumbnail(msg)
 
+	case "openFilePath":
+		err = r.handleOpenFilePath(msg)
+
+	case "openFolderPath":
+		err = r.handleOpenFolderPath(msg)
+
 	case "triggerUpdate":
 		err = r.handleTriggerUpdate(msg)
 

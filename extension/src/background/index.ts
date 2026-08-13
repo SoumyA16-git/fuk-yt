@@ -34,12 +34,6 @@ function connect(): chrome.runtime.Port {
 
     // Unsolicited push events (PRD §18) — broadcast to all YouTube tabs
     if (type === 'jobProgress' || type === 'jobComplete' || type === 'jobError') {
-      if (type === 'jobComplete') {
-        const payload = message.payload as { filepath?: string; jobType?: string } | undefined;
-        if (payload?.filepath) {
-          registerBrowserDownload(payload.filepath);
-        }
-      }
       broadcastToTabs({ type: 'NATIVE_PUSH', payload: message });
       return;
     }
@@ -264,26 +258,6 @@ async function handleMessage(message: { type: string; payload?: unknown }): Prom
 // ============================================================
 // Lifecycle
 // ============================================================
-
-async function registerBrowserDownload(filepath: string) {
-  try {
-    const fileUrl = 'file:///' + filepath.replace(/\\/g, '/');
-    const baseName = filepath.replace(/\\/g, '/').split('/').pop() || 'download';
-
-    chrome.extension.isAllowedFileSchemeAccess((allowed) => {
-      if (allowed) {
-        chrome.downloads.download({
-          url: fileUrl,
-          filename: baseName,
-          conflictAction: 'overwrite',
-          saveAs: false,
-        });
-      }
-    });
-  } catch (err) {
-    console.warn('[FUK-YT SW] Browser download registration error:', err);
-  }
-}
 
 self.addEventListener('activate', () => {
   console.log('[FUK-YT SW] Activated');

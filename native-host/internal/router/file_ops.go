@@ -151,6 +151,34 @@ func getDownloadsDir() (string, error) {
 	return "", fmt.Errorf("reg query: could not parse path")
 }
 
+func (r *Router) handleOpenFilePath(msg *host.RawMessage) error {
+	var payload struct {
+		Filepath string `json:"filepath"`
+	}
+	if err := parsePayload(msg.Payload, &payload); err != nil {
+		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", err.Error())
+	}
+	if payload.Filepath == "" {
+		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", "filepath is required")
+	}
+	openFileCmd(payload.Filepath)
+	return r.h.SendResponse(msg.RequestID, map[string]bool{"opened": true})
+}
+
+func (r *Router) handleOpenFolderPath(msg *host.RawMessage) error {
+	var payload struct {
+		Filepath string `json:"filepath"`
+	}
+	if err := parsePayload(msg.Payload, &payload); err != nil {
+		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", err.Error())
+	}
+	if payload.Filepath == "" {
+		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", "filepath is required")
+	}
+	openFolderCmd(payload.Filepath)
+	return r.h.SendResponse(msg.RequestID, map[string]bool{"opened": true})
+}
+
 func (r *Router) handleDownloadThumbnail(msg *host.RawMessage) error {
 	var payload struct {
 		VideoID string `json:"videoId"`
