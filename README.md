@@ -93,7 +93,7 @@
 3. Click **Load unpacked** in the top-left corner.
 4. Select the extracted **`fuk-yt-extension`** folder.
 
-![Chrome Extensions Load Unpacked Placeholder](YOUR_CHROME_EXTENSIONS_PAGE_IMAGE_URL_HERE)
+![Chrome Extensions Load Unpacked Placeholder](https://i.ibb.co/k26svn50/image.png)
 
 ---
 
