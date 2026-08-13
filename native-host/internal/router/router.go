@@ -6,8 +6,8 @@ package router
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/fukyt/host/internal/ffmpeg"
 	"github.com/fukyt/host/internal/host"
@@ -268,6 +268,7 @@ func (r *Router) handleOpenFolder(msg *host.RawMessage) error {
 		return r.h.SendError(msg.RequestID, "JOB_NOT_FOUND", "Job not found or no file")
 	}
 
+	logging.Info("router: openFolder called", map[string]interface{}{"path": job.Filepath})
 	openFolderCmd(job.Filepath)
 	return r.h.SendResponse(msg.RequestID, map[string]bool{"opened": true})
 }
@@ -325,12 +326,10 @@ func openFileCmd(path string) {
 }
 
 func openFolderCmd(path string) {
-	// Pass the path via an environment variable so no shell quoting is involved.
-	// Direct /select,<path> or cmd /c approaches all break on filenames with
-	// brackets [ ], spaces, @, or () because Go's exec and cmd.exe double-process
-	// the quoting. PowerShell reads $env:_FUKYT_P directly — zero quoting issues.
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
-		"-Command", `explorer ("/select," + $env:_FUKYT_P)`)
-	cmd.Env = append(os.Environ(), "_FUKYT_P="+path)
-	_ = cmd.Start()
+	// SIMPLE: just open the parent directory — explorer.exe <dir> always works.
+	// All /select, approaches fail on filenames with brackets/spaces/@ due to
+	// Windows argument-quoting hell between Go exec, cmd.exe, and Explorer.
+	dir := filepath.Dir(path)
+	logging.Info("router: openFolderCmd", map[string]interface{}{"path": path, "dir": dir})
+	_ = exec.Command("explorer.exe", dir).Start()
 }
