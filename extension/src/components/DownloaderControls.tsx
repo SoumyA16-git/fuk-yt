@@ -353,7 +353,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Sparkles size={14} />
                     <span>
-                      New update available: <strong>{githubVersion}</strong> (current: {engineInfo.version}). Only modified files will be updated.
+                      New version available: <strong>{githubVersion}</strong>
                     </span>
                   </div>
                   <button
