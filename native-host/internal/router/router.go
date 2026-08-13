@@ -77,6 +77,9 @@ func (r *Router) Dispatch(msg *host.RawMessage) {
 	case "openFolder":
 		err = r.handleOpenFolder(msg)
 
+	case "triggerUpdate":
+		err = r.handleTriggerUpdate(msg)
+
 	default:
 		// SEC-02: unsupported operation → ok:false, no crash
 		logging.Warn("router: unsupported operation", map[string]interface{}{"type": msg.Type})

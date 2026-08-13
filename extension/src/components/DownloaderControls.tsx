@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Film, Music, Scissors, Star } from 'lucide-react';
+import { Film, Music, Scissors, Star, Image, Sparkles, Loader2 } from 'lucide-react';
 import type { EngineInfo, FormatInfo, VideoInfo, Job, JobState } from '@/types';
 import { NativeClient } from '@/services/nativeClient';
 import { EngineStatusPanel } from './EngineStatus';
 import { VideoPanel } from './VideoPanel';
 import { AudioPanel } from './AudioPanel';
 import { ClipPanel } from './ClipPanel';
+import { ThumbnailPanel } from './ThumbnailPanel';
 import type { VideoMetadataDom } from '@/adapter/YouTubeAdapter';
 
 const GithubIcon = ({ size = 14 }: { size?: number }) => (
@@ -20,7 +21,7 @@ const GithubIcon = ({ size = 14 }: { size?: number }) => (
   </svg>
 );
 
-type TabId = 'video' | 'audio' | 'clip';
+type TabId = 'video' | 'audio' | 'clip' | 'thumbnail';
 
 interface DownloaderControlsProps {
   videoId: string;
@@ -31,6 +32,7 @@ const TAB_BUTTONS: Array<{ id: TabId; label: string; icon: React.ReactNode; aria
   { id: 'video', label: 'Video', icon: <Film size={14} />, ariaLabel: 'Video download' },
   { id: 'audio', label: 'Audio', icon: <Music size={14} />, ariaLabel: 'Audio download' },
   { id: 'clip',  label: 'Clip',  icon: <Scissors size={14} />, ariaLabel: 'Clip download' },
+  { id: 'thumbnail', label: 'Thumbnail', icon: <Image size={14} />, ariaLabel: 'Thumbnail download' },
 ];
 
 /**
@@ -43,6 +45,32 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
   const [githubVersion, setGithubVersion] = useState<string>('v0.2.11');
   const [starsCount, setStarsCount] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('video');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  async function handleUpdateEngine() {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    try {
+      const downloadUrl = `https://github.com/SoumyA16-git/fuk-yt/releases/download/${githubVersion}/native-host.exe`;
+      await NativeClient.triggerUpdate(downloadUrl);
+      
+      setTimeout(async () => {
+        let attempts = 0;
+        const interval = setInterval(async () => {
+          attempts++;
+          const alive = await NativeClient.ping();
+          if (alive || attempts > 20) {
+            clearInterval(interval);
+            window.location.reload();
+          }
+        }, 1000);
+      }, 2000);
+    } catch (err) {
+      console.error('Update failed:', err);
+      alert('Update failed: ' + (err as Error).message);
+      setIsUpdating(false);
+    }
+  }
 
   useEffect(() => {
     async function fetchGitHubStats() {
@@ -307,6 +335,55 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             <EngineStatusPanel onReady={(info) => { setEngineReady(true); setEngineInfo(info); }} />
           ) : (
             <>
+              {engineReady && engineInfo && githubVersion && engineInfo.version !== githubVersion && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    background: 'rgba(241, 196, 15, 0.1)',
+                    border: '1px solid rgba(241, 196, 15, 0.3)',
+                    marginBottom: 12,
+                    fontSize: 13,
+                    color: '#f1c40f',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Sparkles size={14} />
+                    <span>
+                      New update available: <strong>{githubVersion}</strong> (current: {engineInfo.version}). Only modified files will be updated.
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleUpdateEngine}
+                    disabled={isUpdating}
+                    style={{
+                      background: '#f1c40f',
+                      color: '#0f0f0f',
+                      border: 'none',
+                      padding: '4px 12px',
+                      borderRadius: 12,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: isUpdating ? 'default' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    {isUpdating ? (
+                      <>
+                        <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                        <span>Updating...</span>
+                      </>
+                    ) : (
+                      <span>Update Now</span>
+                    )}
+                  </button>
+                </div>
+              )}
               {activeTab === 'video' && (
                 <VideoPanel
                   videoId={videoId}
@@ -338,6 +415,12 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                   formatsError={formatsError}
                   activeJob={clipJob}
                   onJobUpdate={setClipJob}
+                />
+              )}
+              {activeTab === 'thumbnail' && (
+                <ThumbnailPanel
+                  videoId={videoId}
+                  videoInfo={videoInfo}
                 />
               )}
             </>

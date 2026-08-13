@@ -110,4 +110,9 @@ export const NativeClient = {
   async openFolder(jobId: string): Promise<void> {
     await sendNative('openFolder', { jobId });
   },
+
+  /** triggerUpdate */
+  async triggerUpdate(downloadUrl: string): Promise<void> {
+    await sendNative('triggerUpdate', { downloadUrl });
+  },
 };
