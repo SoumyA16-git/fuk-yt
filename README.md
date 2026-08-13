@@ -59,45 +59,35 @@
 
 ---
 
-## 🛠️ Requirements & Prerequisites
+## 🛠️ Requirements & System Support
 
-Before setting up Fuk-YT, ensure you have:
 - **OS**: Windows 10 or Windows 11 (64-bit)
-- **Browser**: Google Chrome, Brave, Edge, or any MV3 Chromium browser
-- **Go**: [Go 1.22+](https://go.dev/dl/) (Required to build the local native engine)
-- **Node.js**: [Node.js 18+](https://nodejs.org/) & `npm` (Required to build the Chrome extension)
-- **FFmpeg & yt-dlp**: Automatically bundled or resolved by `install.bat`.
+- **Browser**: Google Chrome, Brave, Edge, or any Chromium MV3 browser
+- **Pre-built Engine**: No manual building or coding needed! Everything is included in the release package.
 
 ---
 
-## 🚀 Quick Setup & Installation (1-Click)
+## 🚀 Quick Setup & Installation (No Build Required)
 
-### Step 1: Clone the Repository
-Open your terminal or Command Prompt and run:
-```bash
-git clone https://github.com/SoumyA16-git/fuk-yt.git
-cd fuk-yt
-```
+### Step 1: Download Pre-built Release
+1. Go to the [**Fuk-YT Releases Page**](https://github.com/SoumyA16-git/fuk-yt/releases).
+2. Download the latest `fuk-yt-release.zip` (or clone the repository).
+3. Extract the downloaded `.zip` file to any folder on your computer.
 
 ---
 
-### Step 2: Run the Automated Installer
-Double-click `install.bat` or run it from Command Prompt:
-```cmd
-install.bat
-```
-What `install.bat` does automatically:
-1. Compiles the high-performance Go native host (`native-host/bin/native-host.exe`).
-2. Registers the Chrome Native Messaging host in Windows Registry (`HKCU\Software\Google\Chrome\NativeMessagingHosts\com.fukyt.host`).
-3. Installs NPM dependencies and builds the Chrome Extension bundle (`extension/dist/`).
+### Step 2: Run 1-Click Engine Installer
+1. Open the extracted folder.
+2. Double-click `install.bat` (or right-click → **Run as administrator**).
+3. The script will automatically configure the local Go native engine and register it in Windows Registry.
 
 ---
 
 ### Step 3: Load Extension into Chrome
 1. Open Google Chrome and navigate to `chrome://extensions`.
-2. Enable **Developer mode** using the toggle in the top-right corner.
+2. Enable **Developer mode** using the toggle switch in the top-right corner.
 3. Click **Load unpacked** in the top-left corner.
-4. Select the `extension/dist` folder inside the `fuk-yt` repository directory.
+4. Select the `extension/dist` folder (or extracted extension folder).
 
 ![Chrome Extensions Load Unpacked Placeholder](YOUR_CHROME_EXTENSIONS_PAGE_IMAGE_URL_HERE)
 
@@ -107,8 +97,10 @@ What `install.bat` does automatically:
 1. Open any YouTube video (e.g. `https://www.youtube.com/watch?v=...`).
 2. You will see the **Fuk-YT** control bar directly underneath the video player with an `Engine Ready` indicator!
 
+---
+
 <details>
-<summary>🛠️ <b>Click here for Manual Developer Build Instructions</b></summary>
+<summary>🛠️ <b>Click here for Source Build / Developer Setup Instructions</b></summary>
 
 ### Manual Build Instructions
 
