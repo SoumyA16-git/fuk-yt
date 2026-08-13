@@ -36,8 +36,7 @@
 
 ---
 
-### 📥 Chrome Browser Downloads Manager Integration
-![Chrome Download Manager Integration](YOUR_CHROME_DOWNLOADS_IMAGE_URL_HERE)
+
 
 ---
 
