@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Film, Music, Scissors } from 'lucide-react';
+import { Film, Music, Scissors, Star } from 'lucide-react';
 import type { EngineInfo, FormatInfo, VideoInfo, Job, JobState } from '@/types';
 import { NativeClient } from '@/services/nativeClient';
 import { EngineStatusPanel } from './EngineStatus';
@@ -7,6 +7,18 @@ import { VideoPanel } from './VideoPanel';
 import { AudioPanel } from './AudioPanel';
 import { ClipPanel } from './ClipPanel';
 import type { VideoMetadataDom } from '@/adapter/YouTubeAdapter';
+
+const GithubIcon = ({ size = 14 }: { size?: number }) => (
+  <svg
+    height={size}
+    width={size}
+    viewBox="0 0 16 16"
+    fill="currentColor"
+    style={{ display: 'inline-block', verticalAlign: 'middle' }}
+  >
+    <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+  </svg>
+);
 
 type TabId = 'video' | 'audio' | 'clip';
 
@@ -28,7 +40,37 @@ const TAB_BUTTONS: Array<{ id: TabId; label: string; icon: React.ReactNode; aria
 export function DownloaderControls({ videoId }: DownloaderControlsProps) {
   const [engineReady, setEngineReady] = useState(false);
   const [engineInfo, setEngineInfo] = useState<EngineInfo | null>(null);
+  const [githubVersion, setGithubVersion] = useState<string>('v0.2.11');
+  const [starsCount, setStarsCount] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('video');
+
+  useEffect(() => {
+    async function fetchGitHubStats() {
+      try {
+        const res = await fetch('https://api.github.com/repos/SoumyA16-git/fuk-yt');
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.stargazers_count === 'number') {
+            setStarsCount(data.stargazers_count);
+          }
+        }
+      } catch {
+        // network fallback
+      }
+      try {
+        const res = await fetch('https://api.github.com/repos/SoumyA16-git/fuk-yt/releases/latest');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.tag_name) {
+            setGithubVersion(data.tag_name);
+          }
+        }
+      } catch {
+        // network fallback
+      }
+    }
+    fetchGitHubStats();
+  }, []);
 
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
   const [formats, setFormats] = useState<FormatInfo[] | null>(null);
@@ -191,17 +233,70 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
           })}
         </div>
 
-        {/* Engine Status Badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', borderRadius: 16, background: 'rgba(255, 255, 255, 0.05)', fontSize: 12, color: '#aaa' }}>
-          <div
+        {/* Right Section: GitHub Stats + Engine Status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* GitHub Repository Widget */}
+          <a
+            href="https://github.com/SoumyA16-git/fuk-yt"
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              background: engineReady ? '#22c55e' : '#ef4444',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              height: 32,
+              padding: '0 12px',
+              borderRadius: 16,
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              color: '#f1f1f1',
+              textDecoration: 'none',
+              fontSize: 12,
+              fontWeight: 500,
+              transition: 'all 0.2s ease',
+              cursor: 'pointer',
             }}
-          />
-          <span>{engineReady ? `Engine Ready · ${engineInfo?.ytDlpVersion ?? 'v2026'}` : 'Engine Offline'}</span>
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            }}
+          >
+            <GithubIcon size={14} />
+            <span style={{ opacity: 0.8 }}>SoumyA16-git/fuk-yt</span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+                borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+                paddingLeft: 8,
+                marginLeft: 2,
+                color: '#f1c40f',
+              }}
+            >
+              <Star size={12} fill="#f1c40f" stroke="#f1c40f" />
+              <span style={{ fontSize: 11, fontWeight: 600 }}>
+                {starsCount !== null ? starsCount : 'Star'}
+              </span>
+            </div>
+          </a>
+
+          {/* Engine Status Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', borderRadius: 16, background: 'rgba(255, 255, 255, 0.05)', fontSize: 12, color: '#aaa' }}>
+            <div
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: engineReady ? '#22c55e' : '#ef4444',
+              }}
+            />
+            <span>{engineReady ? `Engine Ready · ${githubVersion}` : 'Engine Offline'}</span>
+          </div>
         </div>
       </div>
 
