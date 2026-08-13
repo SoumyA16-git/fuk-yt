@@ -67,19 +67,21 @@
 
 ---
 
-## 🚀 Quick Setup & Installation (No Build Required)
+## 🚀 Quick Setup & Installation (No Coding / No Build Required)
 
-### Step 1: Download Pre-built Release
-1. Go to the [**Fuk-YT Releases Page**](https://github.com/SoumyA16-git/fuk-yt/releases).
-2. Download the latest `fuk-yt-release.zip` (or clone the repository).
-3. Extract the downloaded `.zip` file to any folder on your computer.
+### Step 1: Download Release Zips
+1. Go to the [**Fuk-YT GitHub Releases Page**](https://github.com/SoumyA16-git/fuk-yt/releases).
+2. Download the 2 pre-built zip files from the latest release:
+   - 📦 **`fuk-yt-extension.zip`** (Chrome Extension)
+   - ⚙️ **`fuk-yt-engine-windows.zip`** (Local Go Engine)
+3. Extract both `.zip` files to any folder on your PC.
 
 ---
 
 ### Step 2: Run 1-Click Engine Installer (One-Time Setup)
-1. Open the extracted folder.
-2. Double-click `install.bat` (or right-click → **Run as administrator**).
-3. The script will automatically configure the local Go native engine and register it in Windows Registry.
+1. Open the extracted **`fuk-yt-engine-windows`** folder.
+2. Double-click **`install.bat`** (or right-click → **Run as administrator**).
+3. The script will automatically configure the local engine and register it in Windows Registry.
 
 > 💡 **Note**: You only need to run `install.bat` **ONCE** during initial setup. Windows Registry keeps the engine registered permanently, so after any PC restart, Chrome automatically connects to the downloader — no need to run `install.bat` again!
 
@@ -89,7 +91,7 @@
 1. Open Google Chrome and navigate to `chrome://extensions`.
 2. Enable **Developer mode** using the toggle switch in the top-right corner.
 3. Click **Load unpacked** in the top-left corner.
-4. Select the `extension/dist` folder (or extracted extension folder).
+4. Select the extracted **`fuk-yt-extension`** folder.
 
 ![Chrome Extensions Load Unpacked Placeholder](YOUR_CHROME_EXTENSIONS_PAGE_IMAGE_URL_HERE)
 
