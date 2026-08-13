@@ -11,6 +11,9 @@ temp/
 logs/
 bin/bin/
 
+# Release zips
+*.zip
+
 # OS metadata
 .DS_Store
 Thumbs.db

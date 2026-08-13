@@ -1,74 +1,82 @@
 @echo off
 setlocal enabledelayedexpansion
-title Fuk-YT - Automated Git Push and Release
+title Fuk-YT - Automated Local Build and GitHub Release
 cd /d "%~dp0"
 
 echo ========================================================
-echo       Fuk-YT - Automated Git Push and Release
+echo       Fuk-YT - Local Build and GitHub Release
 echo ========================================================
 echo.
 
-echo [1/5] Checking Git installation...
-git --version >nul 2>&1
+set "GH_PATH=C:\Program Files\GitHub CLI\gh.exe"
+if not exist "%GH_PATH%" set "GH_PATH=gh"
+
+echo [1/6] Building Chrome Extension dist package...
+cd extension
+call npm run build
 if errorlevel 1 (
-    echo ERROR: Git is not installed or not in PATH.
+    echo ERROR: Extension build failed.
     pause
     exit /b 1
 )
+cd ..
+
+echo Zipping extension dist folder...
+powershell -NoProfile -Command "Compress-Archive -Path extension\dist\* -DestinationPath fuk-yt-extension.zip -Force"
 
 echo.
-echo [2/5] Staging modified files...
+echo [2/6] Building Go Native Host Engine...
+cd native-host
+go build -ldflags="-s -w" -o bin\native-host.exe .\cmd\host
+if errorlevel 1 (
+    echo ERROR: Native host build failed.
+    pause
+    exit /b 1
+)
+cd ..
+
+echo Zipping native host engine package...
+powershell -NoProfile -Command "Compress-Archive -Path native-host\bin\native-host.exe, native-host\com.fukyt.host.json, install.bat -DestinationPath fuk-yt-engine-windows.zip -Force"
+
+echo.
+echo [3/6] Staging modified files...
 git add .
 
 echo.
-echo [3/5] Creating commit...
+echo [4/6] Creating git commit...
 git diff --cached --quiet
 if errorlevel 1 (
-    git commit -m "Update: auto-build and release sync"
-    if errorlevel 1 (
-        echo ERROR: Commit failed.
-        pause
-        exit /b 1
-    )
+    git commit -m "Update: auto-build and release package sync"
 ) else (
     echo No uncommitted changes found.
 )
 
 echo.
-echo [4/5] Pushing changes to GitHub main branch...
+echo [5/6] Pushing code to GitHub main branch...
 git push -u origin main
-if errorlevel 1 (
-    echo.
-    echo ========================================================
-    echo             GIT PUSH TO MAIN FAILED
-    echo ========================================================
-    pause
-    exit /b 1
-)
 
 echo.
-echo [5/5] Generating Auto-Version Tag for GitHub Release...
+echo [6/6] Creating Auto-Version Tag and Uploading Release Files to GitHub...
 
 for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "$t = (git describe --tags --abbrev=0 2>$null); if (-not $t) { $t = 'v0.2.0' }; $parts = ($t -replace '^v','').Split('.'); [int]$patch = [int]$parts[2] + 1; Write-Output ('v' + $parts[0] + '.' + $parts[1] + '.' + $patch)"`) do (
     set "NEW_TAG=%%i"
 )
 
-if "%NEW_TAG%"=="" set "NEW_TAG=v0.2.1"
+if "%NEW_TAG%"=="" set "NEW_TAG=v0.2.4"
 
 echo.
-echo Auto-Generated Release Tag: !NEW_TAG!
-echo Creating local tag !NEW_TAG!...
-git tag -a "!NEW_TAG!" -m "Release !NEW_TAG! (Automated Extension and Engine Build)"
+echo Generated Release Version: !NEW_TAG!
+echo Uploading fuk-yt-extension.zip and fuk-yt-engine-windows.zip to GitHub Releases...
 
-echo Pushing tag !NEW_TAG! to GitHub...
-git push origin "!NEW_TAG!"
+"%GH_PATH%" release create "!NEW_TAG!" fuk-yt-extension.zip fuk-yt-engine-windows.zip --title "Fuk-YT Release !NEW_TAG!" --notes "Automated local build release for Fuk-YT Extension and Go Engine Host." --clobber
 
 echo.
 echo ========================================================
-echo    PUSH AND RELEASE TRIGGER SUCCESSFUL!
-echo    Release Tag: !NEW_TAG!
-echo    GitHub Actions is building fuk-yt-extension.zip
-echo    and publishing to GitHub Releases automatically!
+echo    DIRECT GITHUB RELEASE UPLOAD SUCCESSFUL!
+echo    Version: !NEW_TAG!
+echo    Files Uploaded to GitHub Releases:
+echo    - fuk-yt-extension.zip
+echo    - fuk-yt-engine-windows.zip
 echo ========================================================
 echo.
 pause
