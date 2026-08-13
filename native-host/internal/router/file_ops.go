@@ -70,18 +70,9 @@ func (r *Router) handleDeleteFile(msg *host.RawMessage) error {
 	var payload struct {
 		Filepath string `json:"filepath"`
 	}
-	if err := parsePayload(msg.Payload, &payload); err != nil {
-		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", err.Error())
-	}
-
-	if payload.Filepath == "" {
-		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", "filepath is required")
-	}
-
-	logging.Info("fileops: deleting file", map[string]interface{}{"path": payload.Filepath})
-	_ = os.Remove(payload.Filepath)
-
-	return r.h.SendResponse(msg.RequestID, map[string]bool{"deleted": true})
+	_ = parsePayload(msg.Payload, &payload)
+	logging.Info("fileops: ignoring deleteFile request (file deletion permanently disabled)", map[string]interface{}{"path": payload.Filepath})
+	return r.h.SendResponse(msg.RequestID, map[string]bool{"deleted": false})
 }
 
 // Helper: copyFile copies src to dest.
