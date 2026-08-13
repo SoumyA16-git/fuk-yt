@@ -66,7 +66,8 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
     setIsUpdating(true);
     try {
       const downloadUrl = `https://github.com/SoumyA16-git/fuk-yt/releases/download/${githubVersion}/native-host.exe`;
-      await NativeClient.triggerUpdate(downloadUrl);
+      // Pass both the binary URL and the version so the native host can download the extension ZIP too.
+      await NativeClient.triggerUpdate(downloadUrl, githubVersion);
       
       setTimeout(async () => {
         let attempts = 0;
