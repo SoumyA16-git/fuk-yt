@@ -71,7 +71,7 @@ echo.
 echo Generated Release Version: !NEW_TAG!
 echo Uploading fuk-yt-extension.zip and fuk-yt-engine-windows.zip to GitHub Releases...
 
-"%GH_PATH%" release create "!NEW_TAG!" fuk-yt-extension.zip fuk-yt-engine-windows.zip --title "Fuk-YT Release !NEW_TAG!" --notes "Automated local build release for Fuk-YT Extension and Go Engine Host." --clobber
+"%GH_PATH%" release create "!NEW_TAG!" fuk-yt-extension.zip fuk-yt-engine-windows.zip --title "Fuk-YT Release !NEW_TAG!" --generate-notes
 
 echo.
 echo ========================================================
