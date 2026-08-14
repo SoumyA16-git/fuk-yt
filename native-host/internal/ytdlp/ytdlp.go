@@ -132,15 +132,22 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 	}
 	args = append(args, url)
 
-	out, err := s.runCapture(ctx, args...)
-	if err != nil {
+	out, runErr := s.runCapture(ctx, args...)
+
+	if len(out) > 0 {
+		if info, err := parseVideoInfo(out, url); err == nil {
+			return info, nil
+		}
+	}
+
+	if runErr != nil {
 		logging.Error("ytdlp: getVideoInfo failed", map[string]interface{}{
 			"url": url,
-			"err": err.Error(),
+			"err": runErr.Error(),
 		})
-		return nil, mapYtdlpError(err)
+		return nil, mapYtdlpError(runErr)
 	}
-	return parseVideoInfo(out, url)
+	return nil, fmt.Errorf("ytdlp: no output and no error")
 }
 
 // GetFormats fetches the full format list (§18 getFormats / FR-41).
@@ -163,15 +170,22 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 	}
 	args = append(args, url)
 
-	out, err := s.runCapture(ctx, args...)
-	if err != nil {
+	out, runErr := s.runCapture(ctx, args...)
+
+	if len(out) > 0 {
+		if formats, err := parseFormats(out); err == nil {
+			return formats, nil
+		}
+	}
+
+	if runErr != nil {
 		logging.Error("ytdlp: getFormats failed", map[string]interface{}{
 			"videoId": videoID,
-			"err":     err.Error(),
+			"err":     runErr.Error(),
 		})
-		return nil, mapYtdlpError(err)
+		return nil, mapYtdlpError(runErr)
 	}
-	return parseFormats(out)
+	return nil, fmt.Errorf("ytdlp: no output and no error")
 }
 
 // DownloadOptions configures a yt-dlp download (FR-42).

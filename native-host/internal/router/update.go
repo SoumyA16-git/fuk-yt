@@ -130,8 +130,12 @@ if exist "!EXT_ZIP!" (
     )
     
     if not "!EXT_DIR!"=="" (
-        echo [%%date%% %%time%%] Extracting extension to !EXT_DIR! >> updater.log
-        powershell -NoProfile -Command "Expand-Archive -Path '!EXT_ZIP!' -DestinationPath '!EXT_DIR!' -Force" >> updater.log 2>&1
+        echo [%%date%% %%time%%] Extracting extension to !EXT_DIR!_new >> updater.log
+        if exist "!EXT_DIR!_new" rmdir /s /q "!EXT_DIR!_new"
+        powershell -NoProfile -Command "Expand-Archive -Path '!EXT_ZIP!' -DestinationPath '!EXT_DIR!_new' -Force" >> updater.log 2>&1
+        echo [%%date%% %%time%%] Copying files to overwrite old extension >> updater.log
+        xcopy /s /e /y "!EXT_DIR!_new\*" "!EXT_DIR!\" >> updater.log 2>&1
+        rmdir /s /q "!EXT_DIR!_new" >> updater.log 2>&1
         echo [%%date%% %%time%%] Extension extracted successfully >> updater.log
     ) else (
         echo [%%date%% %%time%%] Could not locate extension folder. >> updater.log
