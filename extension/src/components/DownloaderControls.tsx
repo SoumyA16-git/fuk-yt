@@ -348,17 +348,19 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             <GithubIcon size={14} />
             <div
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: 3,
+                gap: 4,
                 borderLeft: `1px solid ${theme.border}`,
                 paddingLeft: 8,
                 marginLeft: 2,
                 color: '#f1c40f',
+                height: 14,
+                lineHeight: 1,
               }}
             >
-              <Star size={12} fill="#f1c40f" stroke="#f1c40f" style={{ display: 'block' }} />
-              <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1, display: 'block' }}>
+              <Star size={11} fill="#f1c40f" stroke="#f1c40f" style={{ display: 'inline-block', flexShrink: 0 }} />
+              <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1, display: 'inline-block' }}>
                 {starsCount !== null ? starsCount : 'Star'}
               </span>
             </div>

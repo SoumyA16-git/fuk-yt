@@ -214,8 +214,8 @@ export function ClipPanel({
         
         {/* Left: Start / End / Duration / Reset */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 28, background: theme.pillBg, padding: '0 10px', borderRadius: 14, border: `1px solid ${theme.border}`, transition: theme.transition }}>
-            <span style={{ fontSize: 11, color: theme.textSecondary, fontWeight: 500, userSelect: 'none' }}>Start</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 28, background: theme.pillBg, padding: '0 10px', borderRadius: 14, border: `1px solid ${theme.border}`, transition: theme.transition }}>
+            <span style={{ fontSize: 11, color: theme.textSecondary, fontWeight: 500, userSelect: 'none', lineHeight: 1 }}>Start</span>
             <input
               id="fyk-clip-start-input"
               type="text"
@@ -224,12 +224,12 @@ export function ClipPanel({
               onBlur={commitStartText}
               onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
               disabled={isActive}
-              style={{ width: 34, background: 'transparent', border: 'none', color: theme.text, fontSize: 12, fontWeight: 600, textAlign: 'center', outline: 'none', padding: 0, margin: 0 }}
+              style={{ width: 34, background: 'transparent', border: 'none', color: theme.text, fontSize: 12, fontWeight: 600, textAlign: 'left', outline: 'none', padding: 0, margin: 0, lineHeight: 1 }}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 28, background: theme.pillBg, padding: '0 10px', borderRadius: 14, border: `1px solid ${theme.border}`, transition: theme.transition }}>
-            <span style={{ fontSize: 11, color: theme.textSecondary, fontWeight: 500, userSelect: 'none' }}>End</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 28, background: theme.pillBg, padding: '0 10px', borderRadius: 14, border: `1px solid ${theme.border}`, transition: theme.transition }}>
+            <span style={{ fontSize: 11, color: theme.textSecondary, fontWeight: 500, userSelect: 'none', lineHeight: 1 }}>End</span>
             <input
               id="fyk-clip-end-input"
               type="text"
@@ -238,13 +238,13 @@ export function ClipPanel({
               onBlur={commitEndText}
               onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
               disabled={isActive}
-              style={{ width: 34, background: 'transparent', border: 'none', color: theme.text, fontSize: 12, fontWeight: 600, textAlign: 'center', outline: 'none', padding: 0, margin: 0 }}
+              style={{ width: 34, background: 'transparent', border: 'none', color: theme.text, fontSize: 12, fontWeight: 600, textAlign: 'left', outline: 'none', padding: 0, margin: 0, lineHeight: 1 }}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 28, background: theme.pillBg, padding: '0 10px', borderRadius: 14, border: `1px solid ${theme.border}`, transition: theme.transition }}>
-            <span style={{ fontSize: 11, color: theme.textSecondary, fontWeight: 500, userSelect: 'none' }}>Duration</span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: theme.text }}>{formatTimestamp(clipDuration)}</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 28, background: theme.pillBg, padding: '0 10px', borderRadius: 14, border: `1px solid ${theme.border}`, transition: theme.transition }}>
+            <span style={{ fontSize: 11, color: theme.textSecondary, fontWeight: 500, userSelect: 'none', lineHeight: 1 }}>Duration</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: theme.text, lineHeight: 1 }}>{formatTimestamp(clipDuration)}</span>
           </div>
 
           <button
