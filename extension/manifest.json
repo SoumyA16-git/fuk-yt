@@ -17,7 +17,7 @@
     "*://*.youtube.com/*"
   ],
   "background": {
-    "service_worker": "src/background/index.js",
+    "service_worker": "src/background/index.ts",
     "type": "module"
   },
   "content_scripts": [
@@ -27,7 +27,7 @@
         "https://youtube.com/*"
       ],
       "js": [
-        "src/content/index.js"
+        "src/content/index.tsx"
       ],
       "run_at": "document_idle",
       "all_frames": false

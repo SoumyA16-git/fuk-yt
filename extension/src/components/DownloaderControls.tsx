@@ -438,7 +438,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             </span>
           </div>
 
-          <div id="HACKY-TEST-DIV">HELLOOOOO</div> {/* High Quality App Icon */}
+           {/* High Quality App Icon */}
           <div
             title="FUK-YT"
             style={{
@@ -449,7 +449,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
               backgroundImage: `url(${typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL('ICON.png') : 'ICON.png'})`,
               backgroundSize: 'contain',
               backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat', backgroundColor: 'red',
+              backgroundRepeat: 'no-repeat', 
               flexShrink: 0,
             }}
           />
