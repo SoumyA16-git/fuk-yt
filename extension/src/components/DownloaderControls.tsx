@@ -193,6 +193,10 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
           if (prevJob.jobId !== jobId && prevJob.jobId !== '') return prevJob;
 
           if (push.type === 'jobProgress') {
+            // Prevent late progress events from resurrecting cancelled/failed/done jobs
+            if (prevJob.state === 'cancelled' || prevJob.state === 'failed' || prevJob.state === 'done') {
+              return prevJob;
+            }
             const p = push.payload || {};
             return {
               ...prevJob,
@@ -453,11 +457,17 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
           >
             <img
               src={typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL('ICON.png') : 'ICON.png'}
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+                  target.src = chrome.runtime.getURL('icons/icon128.png');
+                }
+              }}
               alt="FUK-YT"
               style={{
-                height: 22,
+                height: 20,
                 width: 'auto',
-                maxHeight: 22,
+                maxHeight: 20,
                 maxWidth: 60,
                 objectFit: 'contain',
                 display: 'block',

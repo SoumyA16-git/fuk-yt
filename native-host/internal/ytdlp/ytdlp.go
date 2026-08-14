@@ -115,11 +115,24 @@ func (s *Service) Version(ctx context.Context) (string, error) {
 
 // GetVideoInfo fetches video metadata (§18 getVideoInfo).
 // SEC-05: fixed argv. SEC-06: URL validated before call.
-func (s *Service) GetVideoInfo(ctx context.Context, url string) (*VideoInfo, error) {
+func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie) (*VideoInfo, error) {
 	if err := ValidateYouTubeURL(url); err != nil {
 		return nil, err
 	}
-	out, err := s.runCapture(ctx, "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5", url)
+
+	cookiePath, cleanup, err := WriteCookiesFile(cookies)
+	if err != nil {
+		return nil, err
+	}
+	defer cleanup()
+
+	args := []string{"--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
+	if cookiePath != "" {
+		args = append(args, "--cookies", cookiePath)
+	}
+	args = append(args, url)
+
+	out, err := s.runCapture(ctx, args...)
 	if err != nil {
 		return nil, mapYtdlpError(err)
 	}
@@ -128,12 +141,25 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string) (*VideoInfo, err
 
 // GetFormats fetches the full format list (§18 getFormats / FR-41).
 // SEC-06: videoId validated.
-func (s *Service) GetFormats(ctx context.Context, videoID string) ([]FormatInfo, error) {
+func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cookie) ([]FormatInfo, error) {
 	if err := ValidateVideoID(videoID); err != nil {
 		return nil, err
 	}
 	url := VideoIDToURL(videoID)
-	out, err := s.runCapture(ctx, "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5", url)
+
+	cookiePath, cleanup, err := WriteCookiesFile(cookies)
+	if err != nil {
+		return nil, err
+	}
+	defer cleanup()
+
+	args := []string{"--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
+	if cookiePath != "" {
+		args = append(args, "--cookies", cookiePath)
+	}
+	args = append(args, url)
+
+	out, err := s.runCapture(ctx, args...)
 	if err != nil {
 		return nil, mapYtdlpError(err)
 	}
@@ -151,6 +177,7 @@ type DownloadOptions struct {
 	// For clip downloads via yt-dlp --download-sections
 	SectionSpec          string // e.g. "*1:00-1:30"
 	ForceKeyframesAtCuts bool
+	Cookies              []Cookie
 }
 
 // Download runs yt-dlp and streams progress events via callback.
@@ -171,6 +198,16 @@ func (s *Service) Download(
 		"--fragment-retries", "10",
 		"--file-access-retries", "10",
 		"-o", opts.OutputPath,
+	}
+
+	cookiePath, cleanup, err := WriteCookiesFile(opts.Cookies)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	if cookiePath != "" {
+		args = append(args, "--cookies", cookiePath)
 	}
 
 	if s.binaryPath != "" {

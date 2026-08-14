@@ -13,6 +13,7 @@ import (
 	"github.com/fukyt/host/internal/logging"
 	"github.com/fukyt/host/internal/process"
 	"github.com/fukyt/host/internal/server"
+	"github.com/fukyt/host/internal/ytdlp"
 	"github.com/google/uuid"
 )
 
@@ -72,7 +73,7 @@ func New(ds *download.Service, pm *process.ProcessManager, pushFn PushFn) *Manag
 }
 
 // StartDownload starts a video or audio download job. Returns jobId.
-func (m *Manager) StartDownload(videoID, outputType, quality, format string) (string, error) {
+func (m *Manager) StartDownload(videoID, outputType, quality, format string, cookies []ytdlp.Cookie) (string, error) {
 	jobID := uuid.New().String()
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -91,12 +92,12 @@ func (m *Manager) StartDownload(videoID, outputType, quality, format string) (st
 
 	m.sendProgress(jobID, StateDownloading, 0, nil, nil, nil, nil)
 
-	go m.runDownload(ctx, jobID, videoID, outputType, quality, format)
+	go m.runDownload(ctx, jobID, videoID, outputType, quality, format, cookies)
 	return jobID, nil
 }
 
 // StartClip starts a clip download job. Returns jobId.
-func (m *Manager) StartClip(videoID string, startSec, endSec float64, outputType, quality, format string) (string, error) {
+func (m *Manager) StartClip(videoID string, startSec, endSec float64, outputType, quality, format string, cookies []ytdlp.Cookie) (string, error) {
 	jobID := uuid.New().String()
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -115,7 +116,7 @@ func (m *Manager) StartClip(videoID string, startSec, endSec float64, outputType
 
 	m.sendProgress(jobID, StateDownloading, 0, nil, nil, nil, nil)
 
-	go m.runClip(ctx, jobID, videoID, startSec, endSec, outputType, quality, format)
+	go m.runClip(ctx, jobID, videoID, startSec, endSec, outputType, quality, format, cookies)
 	return jobID, nil
 }
 
@@ -160,7 +161,7 @@ func (m *Manager) GetJobStatus(jobID string) (*Job, error) {
 // Job runners
 // ============================================================
 
-func (m *Manager) runDownload(ctx context.Context, jobID, videoID, outputType, quality, format string) {
+func (m *Manager) runDownload(ctx context.Context, jobID, videoID, outputType, quality, format string, cookies []ytdlp.Cookie) {
 	var (
 		finalPath string
 		runErr    error
@@ -169,9 +170,9 @@ func (m *Manager) runDownload(ctx context.Context, jobID, videoID, outputType, q
 	progressFn := m.makeProgressFn(jobID)
 
 	if outputType == "audio" {
-		finalPath, runErr = m.downSvc.DownloadAudio(ctx, videoID, format, quality, jobID, progressFn)
+		finalPath, runErr = m.downSvc.DownloadAudio(ctx, videoID, format, quality, jobID, progressFn, cookies)
 	} else {
-		finalPath, runErr = m.downSvc.DownloadVideo(ctx, videoID, quality, format, jobID, progressFn)
+		finalPath, runErr = m.downSvc.DownloadVideo(ctx, videoID, quality, format, jobID, progressFn, cookies)
 	}
 
 	if ctx.Err() != nil {
@@ -217,10 +218,10 @@ func (m *Manager) runDownload(ctx context.Context, jobID, videoID, outputType, q
 	})
 }
 
-func (m *Manager) runClip(ctx context.Context, jobID, videoID string, startSec, endSec float64, outputType, quality, format string) {
+func (m *Manager) runClip(ctx context.Context, jobID, videoID string, startSec, endSec float64, outputType, quality, format string, cookies []ytdlp.Cookie) {
 	progressFn := m.makeProgressFn(jobID)
 
-	finalPath, runErr := m.downSvc.DownloadClip(ctx, videoID, startSec, endSec, outputType, quality, format, jobID, progressFn)
+	finalPath, runErr := m.downSvc.DownloadClip(ctx, videoID, startSec, endSec, outputType, quality, format, jobID, progressFn, cookies)
 
 	if ctx.Err() != nil {
 		return
@@ -284,6 +285,11 @@ func (m *Manager) sendProgress(jobID string, state JobState, percent float64, sp
 	}
 	m.throttle[jobID] = now
 	if job, ok := m.jobs[jobID]; ok {
+		// Prevent late progress events from resurrecting cancelled/failed/done jobs
+		if job.State == StateCancelled || job.State == StateFailed || job.State == StateDone {
+			m.mu.Unlock()
+			return
+		}
 		job.Percent = percent
 		job.State = state
 		job.SpeedBps = speedBps

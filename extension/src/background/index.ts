@@ -236,6 +236,22 @@ async function handleMessage(message: { type: string; payload?: unknown }): Prom
       return nativeRes.payload ?? null;
     }
 
+    case 'GET_YOUTUBE_COOKIES': {
+      return new Promise((resolve, reject) => {
+        if (!chrome.cookies) {
+          resolve([]);
+          return;
+        }
+        chrome.cookies.getAll({ domain: '.youtube.com' }, (cookies) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(cookies);
+          }
+        });
+      });
+    }
+
     default:
       throw new Error(`Unknown message type: ${type}`);
   }

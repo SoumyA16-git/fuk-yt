@@ -126,14 +126,15 @@ func (r *Router) handleGetEngineInfo(msg *host.RawMessage) error {
 
 func (r *Router) handleGetVideoInfo(msg *host.RawMessage) error {
 	var payload struct {
-		URL string `json:"url"`
+		URL     string         `json:"url"`
+		Cookies []ytdlp.Cookie `json:"cookies"`
 	}
 	if err := parsePayload(msg.Payload, &payload); err != nil {
 		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", err.Error())
 	}
 
 	ctx := msg.Context()
-	info, err := r.ytdlp.GetVideoInfo(ctx, payload.URL)
+	info, err := r.ytdlp.GetVideoInfo(ctx, payload.URL, payload.Cookies)
 	if err != nil {
 		return r.h.SendError(msg.RequestID, mapError(err), err.Error())
 	}
@@ -143,14 +144,15 @@ func (r *Router) handleGetVideoInfo(msg *host.RawMessage) error {
 
 func (r *Router) handleGetFormats(msg *host.RawMessage) error {
 	var payload struct {
-		VideoID string `json:"videoId"`
+		VideoID string         `json:"videoId"`
+		Cookies []ytdlp.Cookie `json:"cookies"`
 	}
 	if err := parsePayload(msg.Payload, &payload); err != nil {
 		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", err.Error())
 	}
 
 	ctx := msg.Context()
-	formats, err := r.ytdlp.GetFormats(ctx, payload.VideoID)
+	formats, err := r.ytdlp.GetFormats(ctx, payload.VideoID, payload.Cookies)
 	if err != nil {
 		return r.h.SendError(msg.RequestID, mapError(err), err.Error())
 	}
@@ -160,16 +162,17 @@ func (r *Router) handleGetFormats(msg *host.RawMessage) error {
 
 func (r *Router) handleStartDownload(msg *host.RawMessage) error {
 	var payload struct {
-		VideoID    string `json:"videoId"`
-		OutputType string `json:"outputType"`
-		Quality    string `json:"quality"`
-		Format     string `json:"format"`
+		VideoID    string         `json:"videoId"`
+		OutputType string         `json:"outputType"`
+		Quality    string         `json:"quality"`
+		Format     string         `json:"format"`
+		Cookies    []ytdlp.Cookie `json:"cookies"`
 	}
 	if err := parsePayload(msg.Payload, &payload); err != nil {
 		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", err.Error())
 	}
 
-	jobID, err := r.jobs.StartDownload(payload.VideoID, payload.OutputType, payload.Quality, payload.Format)
+	jobID, err := r.jobs.StartDownload(payload.VideoID, payload.OutputType, payload.Quality, payload.Format, payload.Cookies)
 	if err != nil {
 		return r.h.SendError(msg.RequestID, "START_FAILED", err.Error())
 	}
@@ -179,18 +182,19 @@ func (r *Router) handleStartDownload(msg *host.RawMessage) error {
 
 func (r *Router) handleStartClip(msg *host.RawMessage) error {
 	var payload struct {
-		VideoID    string  `json:"videoId"`
-		StartTime  float64 `json:"startTime"`
-		EndTime    float64 `json:"endTime"`
-		OutputType string  `json:"outputType"`
-		Quality    string  `json:"quality"`
-		Format     string  `json:"format"`
+		VideoID    string         `json:"videoId"`
+		StartTime  float64        `json:"startTime"`
+		EndTime    float64        `json:"endTime"`
+		OutputType string         `json:"outputType"`
+		Quality    string         `json:"quality"`
+		Format     string         `json:"format"`
+		Cookies    []ytdlp.Cookie `json:"cookies"`
 	}
 	if err := parsePayload(msg.Payload, &payload); err != nil {
 		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", err.Error())
 	}
 
-	jobID, err := r.jobs.StartClip(payload.VideoID, payload.StartTime, payload.EndTime, payload.OutputType, payload.Quality, payload.Format)
+	jobID, err := r.jobs.StartClip(payload.VideoID, payload.StartTime, payload.EndTime, payload.OutputType, payload.Quality, payload.Format, payload.Cookies)
 	if err != nil {
 		return r.h.SendError(msg.RequestID, "START_FAILED", err.Error())
 	}

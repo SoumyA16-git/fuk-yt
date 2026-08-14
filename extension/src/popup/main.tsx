@@ -75,6 +75,9 @@ function Popup() {
       >
         <img
           src="ICON.png"
+          onError={(e) => {
+            e.currentTarget.src = 'icons/icon128.png';
+          }}
           alt="FUK-YT"
           style={{
             height: 30,

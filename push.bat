@@ -51,11 +51,26 @@ if exist fuk-yt-engine-windows.zip del /f /q fuk-yt-engine-windows.zip
 powershell -NoProfile -Command "Compress-Archive -Path native-host\bin\*, install.bat, native-host\com.fukyt.host.json -DestinationPath fuk-yt-engine-windows.zip -Force"
 
 echo.
-echo [3/6] Staging modified files...
+echo [3/6] Setting up Local Test Environment...
+echo Killing Chrome to free up files...
+taskkill /F /IM chrome.exe /T >nul 2>&1
+
+echo Cleaning old test folders...
+if exist "test-extension" rmdir /s /q "test-extension"
+if exist "test-engine" rmdir /s /q "test-engine"
+mkdir "test-extension"
+mkdir "test-engine"
+
+echo Extracting packages for local testing...
+powershell -NoProfile -Command "Expand-Archive -Path fuk-yt-extension.zip -DestinationPath test-extension -Force"
+powershell -NoProfile -Command "Expand-Archive -Path fuk-yt-engine-windows.zip -DestinationPath test-engine -Force"
+
+echo.
+echo [4/6] Staging modified files...
 git add .
 
 echo.
-echo [4/6] Creating git commit...
+echo [5/6] Creating git commit...
 git diff --cached --quiet
 if errorlevel 1 (
     git commit -m "Update: auto-build and release package sync"
@@ -64,11 +79,11 @@ if errorlevel 1 (
 )
 
 echo.
-echo [5/6] Pushing code to GitHub main branch...
+echo [6/6] Pushing code to GitHub main branch...
 git push -u origin main
 
 echo.
-echo [6/6] Creating Auto-Version Tag and Uploading Release Files to GitHub...
+echo [7/7] Creating Auto-Version Tag and Uploading Release Files to GitHub...
 
 echo.
 echo Generated Release Version: !NEW_TAG!

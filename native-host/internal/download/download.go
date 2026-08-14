@@ -36,14 +36,14 @@ func New(yt *ytdlp.Service, ff *ffmpeg.Service, fm *files.Manager) *Service {
 
 // DownloadVideo downloads a full video (FR-14/FR-15).
 // Returns the final output path.
-func (s *Service) DownloadVideo(ctx context.Context, videoID, quality, format, jobID string, progressFn ProgressFn) (string, error) {
+func (s *Service) DownloadVideo(ctx context.Context, videoID, quality, format, jobID string, progressFn ProgressFn, cookies []ytdlp.Cookie) (string, error) {
 	if err := ytdlp.ValidateVideoID(videoID); err != nil {
 		return "", fmt.Errorf("INVALID_URL: %w", err)
 	}
 	url := ytdlp.VideoIDToURL(videoID)
 
 	title := videoID
-	if info, err := s.ytdlp.GetVideoInfo(ctx, url); err == nil && info.Title != "" {
+	if info, err := s.ytdlp.GetVideoInfo(ctx, url, cookies); err == nil && info.Title != "" {
 		title = info.Title
 	}
 
@@ -65,6 +65,7 @@ func (s *Service) DownloadVideo(ctx context.Context, videoID, quality, format, j
 		FormatID:    formatStr,
 		MergeFormat: mergeExt,
 		OutputPath:  outputTemplate,
+		Cookies:     cookies,
 	}
 
 	if err := s.files.EnsureDir(files.JobTypeVideo); err != nil {
@@ -88,14 +89,14 @@ func (s *Service) DownloadVideo(ctx context.Context, videoID, quality, format, j
 }
 
 // DownloadAudio downloads a full audio file (FR-20–24).
-func (s *Service) DownloadAudio(ctx context.Context, videoID, audioFormat, quality, jobID string, progressFn ProgressFn) (string, error) {
+func (s *Service) DownloadAudio(ctx context.Context, videoID, audioFormat, quality, jobID string, progressFn ProgressFn, cookies []ytdlp.Cookie) (string, error) {
 	if err := ytdlp.ValidateVideoID(videoID); err != nil {
 		return "", fmt.Errorf("INVALID_URL: %w", err)
 	}
 	url := ytdlp.VideoIDToURL(videoID)
 
 	title := videoID
-	if info, err := s.ytdlp.GetVideoInfo(ctx, url); err == nil && info.Title != "" {
+	if info, err := s.ytdlp.GetVideoInfo(ctx, url, cookies); err == nil && info.Title != "" {
 		title = info.Title
 	}
 
@@ -110,6 +111,7 @@ func (s *Service) DownloadAudio(ctx context.Context, videoID, audioFormat, quali
 		AudioFormat:  audioFormat,
 		AudioQuality: bitrateToYtdlp(quality),
 		OutputPath:   tempPath,
+		Cookies:      cookies,
 	}
 
 	if err := s.files.EnsureDir(files.JobTypeAudio); err != nil {
@@ -132,14 +134,14 @@ func (s *Service) DownloadAudio(ctx context.Context, videoID, audioFormat, quali
 }
 
 // DownloadClip downloads a time-ranged clip (FR-34–36).
-func (s *Service) DownloadClip(ctx context.Context, videoID string, startSec, endSec float64, outputType, quality, format, jobID string, progressFn ProgressFn) (string, error) {
+func (s *Service) DownloadClip(ctx context.Context, videoID string, startSec, endSec float64, outputType, quality, format, jobID string, progressFn ProgressFn, cookies []ytdlp.Cookie) (string, error) {
 	if err := ytdlp.ValidateVideoID(videoID); err != nil {
 		return "", fmt.Errorf("INVALID_URL: %w", err)
 	}
 	url := ytdlp.VideoIDToURL(videoID)
 
 	baseTitle := videoID
-	if info, err := s.ytdlp.GetVideoInfo(ctx, url); err == nil && info.Title != "" {
+	if info, err := s.ytdlp.GetVideoInfo(ctx, url, cookies); err == nil && info.Title != "" {
 		baseTitle = info.Title
 	}
 
@@ -179,6 +181,7 @@ func (s *Service) DownloadClip(ctx context.Context, videoID string, startSec, en
 			OutputPath:           tempPath,
 			SectionSpec:          sectionSpec,
 			ForceKeyframesAtCuts: true,
+			Cookies:              cookies,
 		}
 		err := s.ytdlp.Download(ctx, url, opts, jobID, func(p ytdlp.ProgressEvent) {
 			progressFn(p.Percent, p.SpeedBps, p.ETASec, p.Downloaded, p.Total)
@@ -195,6 +198,7 @@ func (s *Service) DownloadClip(ctx context.Context, videoID string, startSec, en
 			OutputPath:           tempPath,
 			SectionSpec:          sectionSpec,
 			ForceKeyframesAtCuts: true,
+			Cookies:              cookies,
 		}
 		err := s.ytdlp.Download(ctx, url, opts, jobID, func(p ytdlp.ProgressEvent) {
 			progressFn(p.Percent, p.SpeedBps, p.ETASec, p.Downloaded, p.Total)

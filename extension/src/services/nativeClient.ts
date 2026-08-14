@@ -48,6 +48,19 @@ function sendNative<T>(type: string, payload: Record<string, unknown> = {}): Pro
   });
 }
 
+// Helper to fetch cookies from background
+function getYoutubeCookies(): Promise<chrome.cookies.Cookie[]> {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ type: 'GET_YOUTUBE_COOKIES' }, (res: SWResponse) => {
+      if (res?.success && Array.isArray(res.data)) {
+        resolve(res.data);
+      } else {
+        resolve([]);
+      }
+    });
+  });
+}
+
 // ============================================================
 // PRD §18 Operations
 // ============================================================
@@ -70,24 +83,30 @@ export const NativeClient = {
 
   /** §18 getVideoInfo */
   async getVideoInfo(url: string): Promise<VideoInfo> {
-    return sendNative<VideoInfo>('getVideoInfo', { url });
+    const cookies = await getYoutubeCookies();
+    return sendNative<VideoInfo>('getVideoInfo', { url, cookies });
   },
 
   /** §18 getFormats — returns full FormatInfo[] */
   async getFormats(videoId: string): Promise<FormatInfo[]> {
-    const res = await sendNative<{ formats: FormatInfo[] }>('getFormats', { videoId });
+    const cookies = await getYoutubeCookies();
+    const res = await sendNative<{ formats: FormatInfo[] }>('getFormats', { videoId, cookies });
     return res.formats;
   },
 
   /** §18 startDownload — returns jobId */
   async startDownload(req: DownloadRequest): Promise<string> {
-    const res = await sendNative<{ jobId: string }>('startDownload', req as unknown as Record<string, unknown>);
+    const cookies = await getYoutubeCookies();
+    const payload = { ...req, cookies } as unknown as Record<string, unknown>;
+    const res = await sendNative<{ jobId: string }>('startDownload', payload);
     return res.jobId;
   },
 
   /** §18 startClip — returns jobId */
   async startClip(req: ClipRequest): Promise<string> {
-    const res = await sendNative<{ jobId: string }>('startClip', req as unknown as Record<string, unknown>);
+    const cookies = await getYoutubeCookies();
+    const payload = { ...req, cookies } as unknown as Record<string, unknown>;
+    const res = await sendNative<{ jobId: string }>('startClip', payload);
     return res.jobId;
   },
 

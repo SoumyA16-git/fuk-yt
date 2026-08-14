@@ -14,6 +14,10 @@ bin/bin/
 # Release zips
 *.zip
 
+# Local test extraction folders
+test-extension/
+test-engine/
+
 # OS metadata
 .DS_Store
 Thumbs.db
