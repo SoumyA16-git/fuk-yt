@@ -161,6 +161,9 @@ async function handleMessage(message: { type: string; payload?: unknown }): Prom
     case 'NATIVE_REQUEST': {
       // Content/popup sends { type: 'NATIVE_REQUEST', payload: NativeEnvelope }
       const envelope = payload as NativeEnvelope;
+      if (envelope.type === 'triggerUpdate') {
+        await chrome.storage.local.set({ isUpdating: true });
+      }
       const response = await sendNative(envelope);
       // Return the payload from the envelope response
       return response.payload ?? response;
@@ -169,6 +172,17 @@ async function handleMessage(message: { type: string; payload?: unknown }): Prom
     case 'PING_HOST': {
       try {
         await sendNative({ type: 'ping', requestId: crypto.randomUUID(), payload: {} });
+        
+        // If we successfully pinged the host and an update was in progress,
+        // it means updater.bat finished and the new host is running.
+        const { isUpdating } = await chrome.storage.local.get('isUpdating');
+        if (isUpdating) {
+          await chrome.storage.local.remove('isUpdating');
+          chrome.runtime.reload(); // Reload extension
+          // We won't return anything since the context gets invalidated
+          return new Promise(() => {}); 
+        }
+
         return { pong: true };
       } catch {
         throw new Error('ENGINE_UNREACHABLE');

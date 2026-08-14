@@ -61,6 +61,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
   const [starsCount, setStarsCount] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('video');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [updateReady, setUpdateReady] = useState(false);
   const [fileAccessAllowed, setFileAccessAllowed] = useState(true);
 
   async function handleUpdateEngine() {
@@ -75,10 +76,22 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
         let attempts = 0;
         const interval = setInterval(async () => {
           attempts++;
-          const alive = await NativeClient.ping();
-          if (alive || attempts > 20) {
-            clearInterval(interval);
-            window.location.reload();
+          try {
+            await NativeClient.ping();
+            // If the extension reloads itself during this ping, the promise won't resolve,
+            // or it will throw an 'Extension context invalidated' error.
+            if (attempts > 20) {
+              clearInterval(interval);
+              setUpdateReady(true);
+              setIsUpdating(false);
+            }
+          } catch (e: any) {
+            const msg = e?.message || '';
+            if (msg.includes('Extension context invalidated') || attempts > 20) {
+              clearInterval(interval);
+              setUpdateReady(true);
+              setIsUpdating(false);
+            }
           }
         }, 1000);
       }, 2000);
@@ -408,7 +421,27 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
           </a>
 
           {/* Update Now Button (if available) */}
-          {engineReady && engineInfo && githubVersion && isNewerVersion(githubVersion, engineInfo.version) && (
+          {updateReady ? (
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                background: '#2ecc71',
+                color: '#fff',
+                border: 'none',
+                height: 32,
+                padding: '0 12px',
+                borderRadius: 16,
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              Restart Required - Click to Apply
+            </button>
+          ) : engineReady && engineInfo && githubVersion && isNewerVersion(githubVersion, engineInfo.version) && (
             <button
               onClick={handleUpdateEngine}
               disabled={isUpdating}

@@ -102,9 +102,6 @@ timeout /t 1 /nobreak > NUL
 if exist "!OLD_PATH!" del /f /q "!OLD_PATH!" > NUL 2>&1
 echo [%%date%% %%time%%] Renaming active binary to .old >> updater.log
 ren "!EXE_PATH!" "!EXE_NAME!.old" >> updater.log 2>&1
-echo [%%date%% %%time%%] Renaming new binary to !EXE_NAME! >> updater.log
-ren "!NEW_PATH!" "!EXE_NAME!" >> updater.log 2>&1
-
 :: Extract Extension if zip exists
 if exist "!EXT_ZIP!" (
     echo [%%date%% %%time%%] Extension ZIP found. Attempting extraction. >> updater.log
@@ -142,6 +139,9 @@ if exist "!EXT_ZIP!" (
     )
     del /f /q "!EXT_ZIP!" > NUL 2>&1
 )
+
+echo [%%date%% %%time%%] Renaming new binary to !EXE_NAME! >> updater.log
+ren "!NEW_PATH!" "!EXE_NAME!" >> updater.log 2>&1
 
 :: Update yt-dlp if present in binary directory
 if exist "%%~dp0yt-dlp.exe" (
