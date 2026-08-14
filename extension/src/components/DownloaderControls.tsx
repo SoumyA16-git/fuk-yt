@@ -169,10 +169,8 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
     formatsLoadedFor.current = videoId;
 
     try {
-      const [info, fmts] = await Promise.all([
-        NativeClient.getVideoInfo(`https://www.youtube.com/watch?v=${videoId}`),
-        NativeClient.getFormats(videoId),
-      ]);
+      const fmts = await NativeClient.getFormats(videoId);
+      const info = await NativeClient.getVideoInfo(`https://www.youtube.com/watch?v=${videoId}`);
       setVideoInfo(info);
       setFormats(fmts);
     } catch (err) {

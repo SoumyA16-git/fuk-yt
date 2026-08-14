@@ -150,7 +150,6 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 		"--no-playlist",
 		"--no-warnings",
 		"--retries", "5",
-		"--extractor-args", "youtube:player_client=android,web",
 	}
 
 	vid := extractVideoID(url)
@@ -205,7 +204,6 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 		"--no-playlist",
 		"--no-warnings",
 		"--retries", "5",
-		"--extractor-args", "youtube:player_client=android,web",
 	}
 	if cookiePath != "" {
 		args = append(args, "--cookies", cookiePath)
