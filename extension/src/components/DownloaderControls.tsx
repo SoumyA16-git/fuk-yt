@@ -8,6 +8,7 @@ import { AudioPanel } from './AudioPanel';
 import { ClipPanel } from './ClipPanel';
 import { ThumbnailPanel } from './ThumbnailPanel';
 import { useTheme } from '@/hooks/useTheme';
+import { ICON_BASE64 } from './IconBase64';
 import type { VideoMetadataDom } from '@/adapter/YouTubeAdapter';
 
 const GithubIcon = ({ size = 14 }: { size?: number }) => (
@@ -440,17 +441,12 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
 
           {/* High Quality App Icon */}
           <img
-            src={typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL('ICON.png') : 'ICON.png'}
-            onError={(e) => {
-              const target = e.currentTarget;
-              if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
-                target.src = chrome.runtime.getURL('icons/icon128.png');
-              }
-            }}
+            src={ICON_BASE64}
             alt="FUK-YT"
             style={{
               height: 32,
-              width: 'auto',
+              width: 32,
+              minWidth: 32,
               objectFit: 'contain',
               display: 'block',
               flexShrink: 0,
