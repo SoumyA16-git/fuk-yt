@@ -48,7 +48,7 @@ function connect(): chrome.runtime.Port {
         const response = message as unknown as NativeResponse;
         if (response.ok === false) {
           pending.reject(
-            new Error(response.error?.code ?? 'UNKNOWN')
+            new Error(response.error?.message || response.error?.code || 'UNKNOWN')
           );
         } else {
           pending.resolve(response);

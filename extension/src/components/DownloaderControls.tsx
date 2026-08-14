@@ -164,9 +164,10 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
       setFormats(fmts);
     } catch (err) {
       formatsLoadedFor.current = null;
-      setFormatsError((err as Error).message?.includes('INVALID_URL')
+      const errMsg = (err as Error).message || '';
+      setFormatsError(errMsg.includes('INVALID_URL')
         ? "This page isn't a supported YouTube video."
-        : "Couldn't fetch video formats.");
+        : `Error fetching formats: ${errMsg}`);
     } finally {
       setFormatsLoading(false);
     }
