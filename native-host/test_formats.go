@@ -8,7 +8,7 @@ import (
 
 func main() {
 	svc := ytdlp.New("yt-dlp.exe", nil)
-	formats, err := svc.GetFormats(context.Background(), "dQw4w9WgXcQ", nil)
+	formats, err := svc.GetFormats(context.Background(), "2qnRW3ChMBg", nil)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
