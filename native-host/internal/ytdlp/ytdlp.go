@@ -113,12 +113,28 @@ func VideoIDToURL(videoID string) string {
 // Service wraps the yt-dlp binary.
 type Service struct {
 	binaryPath string
+	pluginsDir string // optional: path to yt-dlp-plugins folder
 	pm         *process.ProcessManager
 }
 
 // New creates a new YtDlpService.
 func New(binaryPath string, pm *process.ProcessManager) *Service {
 	return &Service{binaryPath: binaryPath, pm: pm}
+}
+
+// NewWithPlugins creates a new YtDlpService with a custom plugins directory.
+func NewWithPlugins(binaryPath, pluginsDir string, pm *process.ProcessManager) *Service {
+	return &Service{binaryPath: binaryPath, pluginsDir: pluginsDir, pm: pm}
+}
+
+// appendPluginsDir adds --plugin-dirs arg when pluginsDir is configured.
+func (s *Service) appendPluginsDir(args []string) []string {
+	if s.pluginsDir != "" {
+		if _, err := os.Stat(s.pluginsDir); err == nil {
+			return append(args, "--plugin-dirs", s.pluginsDir)
+		}
+	}
+	return args
 }
 
 // Version returns the yt-dlp version string (used by getEngineInfo).
@@ -150,7 +166,10 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 		"--no-playlist",
 		"--no-warnings",
 		"--retries", "5",
+		// android_vr: stable client with full 144p-1080p format access without PO tokens
+		"--extractor-args", "youtube:player_client=android_vr",
 	}
+	args = s.appendPluginsDir(args)
 
 	vid := extractVideoID(url)
 	if vid != "" {
@@ -204,7 +223,10 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 		"--no-playlist",
 		"--no-warnings",
 		"--retries", "5",
+		// android_vr: stable client with full 144p-1080p format access without PO tokens
+		"--extractor-args", "youtube:player_client=android_vr",
 	}
+	args = s.appendPluginsDir(args)
 	if cookiePath != "" {
 		args = append(args, "--cookies", cookiePath)
 	}
@@ -268,7 +290,10 @@ func (s *Service) Download(
 		"--fragment-retries", "10",
 		"--file-access-retries", "10",
 		"-o", opts.OutputPath,
+		// android_vr: stable client with full 144p-1080p format access without PO tokens
+		"--extractor-args", "youtube:player_client=android_vr",
 	}
+	args = s.appendPluginsDir(args)
 
 	vid := extractVideoID(url)
 	if vid != "" {

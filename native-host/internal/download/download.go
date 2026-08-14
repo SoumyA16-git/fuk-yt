@@ -332,7 +332,7 @@ func formatAudioTag(q string) string {
 func buildVideoFormatStr(quality, format string) string {
 	switch quality {
 	case "best", "":
-		return "bestvideo[vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[vcodec^=h264]+bestaudio/bestvideo+bestaudio/best"
+		return "bestvideo[height<=1080][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[height<=1080][vcodec^=h264]+bestaudio/bestvideo[height<=1080]+bestaudio/best[height<=1080]"
 	default:
 		// Strip trailing 'p' or 'p60': "1080p60" → 1080, "720p" → 720
 		h := quality
