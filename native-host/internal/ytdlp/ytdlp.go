@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -126,7 +127,7 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 	}
 	defer cleanup()
 
-	args := []string{"--ignore-config", "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
+	args := []string{"--ignore-no-formats-error", "--ignore-config", "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
 	if cookiePath != "" {
 		args = append(args, "--cookies", cookiePath)
 	}
@@ -164,7 +165,7 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 	}
 	defer cleanup()
 
-	args := []string{"--ignore-config", "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
+	args := []string{"--ignore-no-formats-error", "--ignore-config", "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
 	if cookiePath != "" {
 		args = append(args, "--cookies", cookiePath)
 	}
@@ -466,6 +467,12 @@ func mapYtdlpError(err error) error {
 
 // runCapture runs yt-dlp and captures stdout. SEC-05: uses exec.Command array form.
 func (s *Service) runCapture(ctx context.Context, args ...string) ([]byte, error) {
+	// Look for deno.exe in the same folder as yt-dlp.exe
+	denoPath := filepath.Join(filepath.Dir(s.binaryPath), "deno.exe")
+	if _, err := os.Stat(denoPath); err == nil {
+		args = append([]string{"--js-runtimes", "deno:" + denoPath}, args...)
+	}
+
 	cmd := exec.CommandContext(ctx, s.binaryPath, args...)
 	out, err := cmd.Output()
 	if err != nil {

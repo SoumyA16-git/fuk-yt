@@ -38,24 +38,33 @@ if not exist "%TOOLS_DIR%" mkdir "%TOOLS_DIR%"
 
 :: 3. Download yt-dlp
 if not exist "%TOOLS_DIR%\yt-dlp.exe" (
-    echo [1/3] Downloading yt-dlp...
+    echo [1/4] Downloading yt-dlp...
     powershell -Command "$ErrorActionPreference = 'Stop'; Invoke-WebRequest -Uri 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' -OutFile '%TOOLS_DIR%\yt-dlp.exe'"
     echo  - yt-dlp downloaded!
 ) else (
-    echo [1/3] yt-dlp already installed.
+    echo [1/4] yt-dlp already installed.
 )
 
 :: 4. Download FFmpeg
 if not exist "%TOOLS_DIR%\ffmpeg.exe" (
-    echo [2/3] Downloading FFmpeg - This might take a minute...
+    echo [2/4] Downloading FFmpeg - This might take a minute...
     powershell -Command "$ErrorActionPreference = 'Stop'; Invoke-WebRequest -Uri 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip' -OutFile '%TOOLS_DIR%\ffmpeg.zip' ; Write-Host 'Extracting...'; Expand-Archive -Path '%TOOLS_DIR%\ffmpeg.zip' -DestinationPath '%TOOLS_DIR%\extracted' -Force ; Move-Item -Path '%TOOLS_DIR%\extracted\ffmpeg-*\bin\*.exe' -Destination '%TOOLS_DIR%\' -Force ; Remove-Item '%TOOLS_DIR%\ffmpeg.zip' ; Remove-Item '%TOOLS_DIR%\extracted' -Recurse -Force"
     echo  - FFmpeg downloaded!
 ) else (
-    echo [2/3] FFmpeg already installed.
+    echo [2/4] FFmpeg already installed.
 )
 
-:: 5. Create Manifest File
-echo [3/3] Registering Chrome Native Host...
+:: 5. Download Deno (JS Runtime for yt-dlp)
+if not exist "%TOOLS_DIR%\deno.exe" (
+    echo [3/4] Downloading Deno JS Engine for yt-dlp...
+    powershell -Command "$ErrorActionPreference = 'Stop'; Invoke-WebRequest -Uri 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip' -OutFile '%TOOLS_DIR%\deno.zip' ; Write-Host 'Extracting...'; Expand-Archive -Path '%TOOLS_DIR%\deno.zip' -DestinationPath '%TOOLS_DIR%\deno_extracted' -Force ; Move-Item -Path '%TOOLS_DIR%\deno_extracted\deno.exe' -Destination '%TOOLS_DIR%\' -Force ; Remove-Item '%TOOLS_DIR%\deno.zip' ; Remove-Item '%TOOLS_DIR%\deno_extracted' -Recurse -Force"
+    echo  - Deno downloaded!
+) else (
+    echo [3/4] Deno already installed.
+)
+
+:: 6. Create Manifest File
+echo [4/4] Registering Chrome Native Host...
 set "ESCAPED_HOST_PATH=%NATIVE_EXE:\=\\%"
 
 (
