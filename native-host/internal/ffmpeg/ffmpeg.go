@@ -57,7 +57,7 @@ func (s *Service) Merge(ctx context.Context, videoIn, audioIn, outputPath, jobID
 		"-c", "copy",
 		outputPath,
 	}
-	if err := s.run(ctx, jobID, args...); err == nil {
+	if err := s.Run(ctx, jobID, args...); err == nil {
 		return nil
 	}
 
@@ -68,7 +68,7 @@ func (s *Service) Merge(ctx context.Context, videoIn, audioIn, outputPath, jobID
 		"-c:v", "libx264", "-c:a", "aac",
 		outputPath,
 	}
-	return s.run(ctx, jobID, args...)
+	return s.Run(ctx, jobID, args...)
 }
 
 // CutClip trims a clip from startSec to endSec (FR-36).
@@ -90,7 +90,7 @@ func (s *Service) CutClip(ctx context.Context, inputPath string, startSec, endSe
 
 	if needsReencode {
 		logging.Info("ffmpeg: re-encoding clip for frame accuracy", nil)
-		return s.run(ctx, jobID,
+		return s.Run(ctx, jobID,
 			"-y", "-i", inputPath,
 			"-ss", startStr, "-to", endStr,
 			"-c:v", "libx264", "-c:a", "aac",
@@ -99,7 +99,7 @@ func (s *Service) CutClip(ctx context.Context, inputPath string, startSec, endSe
 	}
 
 	// Stream-copy fast path (before -i for accurate seeking)
-	return s.run(ctx, jobID,
+	return s.Run(ctx, jobID,
 		"-y",
 		"-ss", startStr,
 		"-i", inputPath,
@@ -118,7 +118,7 @@ func (s *Service) CutAudioClip(ctx context.Context, inputPath string, startSec, 
 		"start": startSec, "end": endSec, "codec": codec,
 	})
 
-	return s.run(ctx, jobID,
+	return s.Run(ctx, jobID,
 		"-y",
 		"-ss", formatSeconds(startSec),
 		"-i", inputPath,
@@ -144,7 +144,7 @@ func (s *Service) ExtractAudio(ctx context.Context, inputPath, outputPath, audio
 	}
 	args = append(args, outputPath)
 
-	return s.run(ctx, jobID, args...)
+	return s.Run(ctx, jobID, args...)
 }
 
 // Probe returns basic metadata (duration) via ffprobe.
@@ -166,8 +166,8 @@ func (s *Service) Probe(ctx context.Context, inputPath string) (durationSec floa
 // Helpers
 // ============================================================
 
-// run executes ffmpeg with the given args. SEC-05: uses exec.Command array form.
-func (s *Service) run(ctx context.Context, jobID string, args ...string) error {
+// Run executes ffmpeg with the given args. SEC-05: uses exec.Command array form.
+func (s *Service) Run(ctx context.Context, jobID string, args ...string) error {
 	cmd := exec.CommandContext(ctx, s.ffmpegPath, args...)
 	stderrBuf := &bytes.Buffer{}
 	cmd.Stderr = stderrBuf

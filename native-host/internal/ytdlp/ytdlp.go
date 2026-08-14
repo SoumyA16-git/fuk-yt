@@ -246,6 +246,7 @@ type DownloadOptions struct {
 	// For clip downloads via yt-dlp --download-sections
 	SectionSpec          string // e.g. "*1:00-1:30"
 	ForceKeyframesAtCuts bool
+	RetainTimestamps     bool
 	Cookies              []Cookie
 }
 
@@ -318,6 +319,9 @@ func (s *Service) Download(
 			args = append(args, "--force-keyframes-at-cuts")
 			// Pass ultrafast preset to ffmpeg to make re-encoding almost instant
 			args = append(args, "--downloader-args", "ffmpeg:-preset ultrafast")
+		} else if opts.RetainTimestamps {
+			// Fast fetch using -c copy without keyframe forcing, but retain original timestamps
+			args = append(args, "--downloader-args", "ffmpeg:-copyts")
 		}
 	}
 
