@@ -169,10 +169,28 @@ func (m *Manager) runDownload(ctx context.Context, jobID, videoID, outputType, q
 
 	progressFn := m.makeProgressFn(jobID)
 
-	if outputType == "audio" {
-		finalPath, runErr = m.downSvc.DownloadAudio(ctx, videoID, format, quality, jobID, progressFn, cookies)
-	} else {
-		finalPath, runErr = m.downSvc.DownloadVideo(ctx, videoID, quality, format, jobID, progressFn, cookies)
+	maxAttempts := 3
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		if outputType == "audio" {
+			finalPath, runErr = m.downSvc.DownloadAudio(ctx, videoID, format, quality, jobID, progressFn, cookies)
+		} else {
+			finalPath, runErr = m.downSvc.DownloadVideo(ctx, videoID, quality, format, jobID, progressFn, cookies)
+		}
+
+		if ctx.Err() != nil {
+			// Cancelled by user
+			return
+		}
+
+		if runErr == nil {
+			// Success
+			break
+		}
+
+		if attempt < maxAttempts {
+			logging.Warn("jobs: download attempt failed, retrying...", map[string]interface{}{"jobId": jobID, "attempt": attempt, "err": runErr.Error()})
+			time.Sleep(2 * time.Second) // wait before retry
+		}
 	}
 
 	if ctx.Err() != nil {
