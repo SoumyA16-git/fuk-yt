@@ -17,7 +17,7 @@ import type {
 // Internal helper — send via service worker
 // ============================================================
 
-const TIMEOUT_MS = 30_000;
+const TIMEOUT_MS = 60_000;
 
 function sendNative<T>(type: string, payload: Record<string, unknown> = {}): Promise<T> {
   return new Promise((resolve, reject) => {
