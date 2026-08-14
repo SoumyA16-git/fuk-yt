@@ -157,6 +157,7 @@ export function ClipPanel({
 
     const req: ClipRequest = {
       videoId,
+      title: videoInfo?.title || '',
       startTime: selection.startTime,
       endTime: selection.endTime,
       outputType: type,

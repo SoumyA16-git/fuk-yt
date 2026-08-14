@@ -168,7 +168,26 @@ func (s *Service) Probe(ctx context.Context, inputPath string) (durationSec floa
 
 // Run executes ffmpeg with the given args. SEC-05: uses exec.Command array form.
 func (s *Service) Run(ctx context.Context, jobID string, args ...string) error {
+	return s.RunProgress(ctx, jobID, nil, args...)
+}
+
+// RunProgress executes ffmpeg and parses machine-readable progress if requested.
+func (s *Service) RunProgress(ctx context.Context, jobID string, progressFn func(float64), args ...string) error {
+	if progressFn != nil {
+		args = append([]string{"-progress", "pipe:1"}, args...)
+	}
+
 	cmd := exec.CommandContext(ctx, s.ffmpegPath, args...)
+	
+	var stdoutScanner *bufio.Scanner
+	if progressFn != nil {
+		stdoutPipe, err := cmd.StdoutPipe()
+		if err != nil {
+			return err
+		}
+		stdoutScanner = bufio.NewScanner(stdoutPipe)
+	}
+
 	stderrBuf := &bytes.Buffer{}
 	cmd.Stderr = stderrBuf
 
@@ -182,13 +201,19 @@ func (s *Service) Run(ctx context.Context, jobID string, args ...string) error {
 		}
 	}
 
-	// Parse stderr progress lines (NFR-03)
-	go func() {
-		scanner := bufio.NewScanner(bytes.NewReader(stderrBuf.Bytes()))
-		for scanner.Scan() {
-			// FFmpeg progress could be parsed here for Processing state updates
-		}
-	}()
+	if progressFn != nil && stdoutScanner != nil {
+		go func() {
+			for stdoutScanner.Scan() {
+				line := stdoutScanner.Text()
+				if strings.HasPrefix(line, "out_time_ms=") {
+					val := strings.TrimPrefix(line, "out_time_ms=")
+					if ms, err := strconv.ParseFloat(val, 64); err == nil {
+						progressFn(ms / 1000.0) // pass seconds to progressFn
+					}
+				}
+			}
+		}()
+	}
 
 	if err := cmd.Wait(); err != nil {
 		return fmt.Errorf("ffmpeg: %w: %s", err, stderrBuf.String())

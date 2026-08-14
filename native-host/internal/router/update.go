@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/fukyt/host/internal/host"
@@ -46,6 +45,7 @@ func (r *Router) handleTriggerUpdate(msg *host.RawMessage) error {
 
 	batContent := fmt.Sprintf(`@echo off
 setlocal enabledelayedexpansion
+cd /d "%%~dp0"
 
 echo ===================================================
 echo             FUK-YT AUTO UPDATER
@@ -123,8 +123,9 @@ if exist "%%~dp0install.bat" (
     echo.
     echo You can now reopen your browser.
     echo.
-    pause
 )
+echo.
+pause
 del "%%~f0" & exit
 `, payload.Version, engineUrl, payload.Version, extUrl, detectedExtDir)
 
@@ -139,14 +140,9 @@ del "%%~f0" & exit
 		logging.Warn("updater: failed to send response to extension: " + err.Error())
 	}
 
-	// Start updater.bat in a visible terminal
-	logging.Info("updater: launching updater.bat in visible terminal", nil)
-	cmd := exec.Command("cmd", "/c", "start", "cmd", "/c", "updater.bat")
-	cmd.Dir = exeDir
-	// We want the new window to be detached from this process group
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		CreationFlags: 0x00000008, // DETACHED_PROCESS
-	}
+	// Start updater.bat using explorer.exe to completely escape Chrome's Job Object
+	logging.Info("updater: launching updater.bat via explorer", nil)
+	cmd := exec.Command("explorer.exe", updaterBatPath)
 
 	err = cmd.Start()
 	if err != nil {

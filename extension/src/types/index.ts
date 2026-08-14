@@ -53,6 +53,7 @@ export interface DownloadRequest {
 
 export interface ClipRequest {
   videoId: string;
+  title?: string;
   startTime: number;  // seconds
   endTime: number;    // seconds
   outputType: OutputType;

@@ -97,7 +97,7 @@ func (m *Manager) StartDownload(videoID, outputType, quality, format string, coo
 }
 
 // StartClip starts a clip download job. Returns jobId.
-func (m *Manager) StartClip(videoID string, startSec, endSec float64, outputType, quality, format string, cookies []ytdlp.Cookie) (string, error) {
+func (m *Manager) StartClip(videoID, title string, startSec, endSec float64, outputType, quality, format string, cookies []ytdlp.Cookie) (string, error) {
 	jobID := uuid.New().String()
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -116,7 +116,7 @@ func (m *Manager) StartClip(videoID string, startSec, endSec float64, outputType
 
 	m.sendProgress(jobID, StateDownloading, 0, nil, nil, nil, nil)
 
-	go m.runClip(ctx, jobID, videoID, startSec, endSec, outputType, quality, format, cookies)
+	go m.runClip(ctx, jobID, videoID, title, startSec, endSec, outputType, quality, format, cookies)
 	return jobID, nil
 }
 
@@ -236,7 +236,7 @@ func (m *Manager) runDownload(ctx context.Context, jobID, videoID, outputType, q
 	})
 }
 
-func (m *Manager) runClip(ctx context.Context, jobID, videoID string, startSec, endSec float64, outputType, quality, format string, cookies []ytdlp.Cookie) {
+func (m *Manager) runClip(ctx context.Context, jobID, videoID, title string, startSec, endSec float64, outputType, quality, format string, cookies []ytdlp.Cookie) {
 	progressFn := m.makeProgressFn(jobID)
 
 	var finalPath string
@@ -244,7 +244,7 @@ func (m *Manager) runClip(ctx context.Context, jobID, videoID string, startSec, 
 
 	maxAttempts := 3
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		finalPath, runErr = m.downSvc.DownloadClip(ctx, videoID, startSec, endSec, outputType, quality, format, jobID, progressFn, cookies)
+		finalPath, runErr = m.downSvc.DownloadClip(ctx, videoID, title, startSec, endSec, outputType, quality, format, jobID, progressFn, cookies)
 
 		if ctx.Err() != nil {
 			return

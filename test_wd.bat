@@ -1,0 +1,1 @@
+echo %cd% > wd.txt

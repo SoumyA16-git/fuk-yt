@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fukyt/host/internal/ffmpeg"
@@ -134,24 +135,28 @@ func (s *Service) DownloadAudio(ctx context.Context, videoID, audioFormat, quali
 }
 
 // DownloadClip downloads a time-ranged clip (FR-34–36).
-func (s *Service) DownloadClip(ctx context.Context, videoID string, startSec, endSec float64, outputType, quality, format, jobID string, progressFn ProgressFn, cookies []ytdlp.Cookie) (string, error) {
+func (s *Service) DownloadClip(ctx context.Context, videoID, title string, startSec, endSec float64, outputType, quality, format, jobID string, progressFn ProgressFn, cookies []ytdlp.Cookie) (string, error) {
+	startT := time.Now()
+	logging.Info("[CLIP] request received", map[string]interface{}{"type": outputType, "startSec": startSec, "endSec": endSec})
+
 	if err := ytdlp.ValidateVideoID(videoID); err != nil {
 		return "", fmt.Errorf("INVALID_URL: %w", err)
 	}
 	url := ytdlp.VideoIDToURL(videoID)
 
-	baseTitle := videoID
-	if info, err := s.ytdlp.GetVideoInfo(ctx, url, cookies); err == nil && info.Title != "" {
-		baseTitle = info.Title
+	baseTitle := title
+	if baseTitle == "" {
+		baseTitle = videoID
 	}
 
 	tag := formatQualityTag(quality)
 	if outputType == "audio" {
 		tag = formatAudioTag(quality)
 	}
-	title := fmt.Sprintf("%s [Clip %s]", baseTitle, tag)
+	finalTitle := fmt.Sprintf("%s [Clip %s]", baseTitle, tag)
 
 	sectionSpec := fmt.Sprintf("*%s-%s", formatSeconds(startSec), formatSeconds(endSec))
+	clipDuration := endSec - startSec
 
 	var ext string
 	if outputType == "audio" {
@@ -167,36 +172,64 @@ func (s *Service) DownloadClip(ctx context.Context, videoID string, startSec, en
 	}
 
 	tempPath := s.files.TempPath("." + ext)
-
 	jobType := files.JobTypeClip
 	if err := s.files.EnsureDir(jobType); err != nil {
 		return "", fmt.Errorf("DISK_FULL: %w", err)
 	}
 
+	// Unified progress wrapper
+	// Stage 1 (yt-dlp): 5% -> 85%
+	// Stage 2 (ffmpeg): 85% -> 100%
+	progressFn(5.0, nil, nil, nil, nil)
+	
+	ffmpegProgressFn := func(sec float64) {
+		pct := 85.0 + (sec/clipDuration)*14.0
+		if pct > 99.0 {
+			pct = 99.0
+		}
+		progressFn(pct, nil, nil, nil, nil)
+	}
+
+	logging.Info(fmt.Sprintf("[CLIP] preparation complete: %d ms", time.Since(startT).Milliseconds()), nil)
+
+	var stage1Path string
+
 	if outputType == "audio" {
-		stage1Path := tempPath + ".stage1." + ext
+		stage1Path = tempPath + ".stage1." + ext
 		opts := ytdlp.DownloadOptions{
-			ExtractAudio:         true,
-			AudioFormat:          ext,
-			AudioQuality:         bitrateToYtdlp(quality),
+			ExtractAudio:         false, // DO NOT extract audio post-download, download audio directly!
+			FormatID:             "bestaudio/best",
+			MergeFormat:          "",
 			OutputPath:           stage1Path,
 			SectionSpec:          sectionSpec,
 			ForceKeyframesAtCuts: false,
 			RetainTimestamps:     true,
 			Cookies:              cookies,
 		}
+		
+		ytdlpStart := time.Now()
+		logging.Info("[CLIP] yt-dlp start", nil)
+		var firstProgress sync.Once
+		
 		err := s.ytdlp.Download(ctx, url, opts, jobID, func(p ytdlp.ProgressEvent) {
-			p.Percent = p.Percent * 0.5
-			progressFn(p.Percent, p.SpeedBps, p.ETASec, p.Downloaded, p.Total)
+			firstProgress.Do(func() {
+				logging.Info(fmt.Sprintf("[CLIP] first download progress: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
+			})
+			scaledPct := 5.0 + (p.Percent * 0.80)
+			progressFn(scaledPct, p.SpeedBps, p.ETASec, p.Downloaded, p.Total)
 		})
 		if err != nil {
 			_ = os.Remove(stage1Path)
 			return "", mapDownloadError(err)
 		}
+		logging.Info(fmt.Sprintf("[CLIP] yt-dlp complete: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
 
-		progressFn(50.0, nil, nil, nil, nil)
+		progressFn(85.0, nil, nil, nil, nil)
 
-		// Stage B: Exact Boundary Correction (Audio is precise enough with stream copy)
+		ffmpegStart := time.Now()
+		logging.Info("[CLIP] ffmpeg start", nil)
+		
+		// Stage B: Exact Boundary Correction (Stream copy for speed)
 		args := []string{
 			"-y",
 			"-i", stage1Path,
@@ -205,18 +238,17 @@ func (s *Service) DownloadClip(ctx context.Context, videoID string, startSec, en
 			"-c:a", "copy",
 			tempPath,
 		}
-		err = s.ffmpeg.Run(ctx, jobID, args...)
+		err = s.ffmpeg.RunProgress(ctx, jobID, ffmpegProgressFn, args...)
 		_ = os.Remove(stage1Path)
 		if err != nil {
 			_ = os.Remove(tempPath)
 			return "", fmt.Errorf("FFMPEG_FAILED")
 		}
-
-		progressFn(100.0, nil, nil, nil, nil)
+		logging.Info(fmt.Sprintf("[CLIP] ffmpeg complete: %d ms", time.Since(ffmpegStart).Milliseconds()), nil)
 
 	} else {
-		formatStr := buildVideoFormatStr("1080", ext)
-		stage1Path := tempPath + ".stage1.mp4"
+		formatStr := buildVideoFormatStr(quality, ext)
+		stage1Path = tempPath + ".stage1.mp4"
 		opts := ytdlp.DownloadOptions{
 			FormatID:             formatStr,
 			MergeFormat:          ext,
@@ -226,44 +258,56 @@ func (s *Service) DownloadClip(ctx context.Context, videoID string, startSec, en
 			RetainTimestamps:     true,
 			Cookies:              cookies,
 		}
+		
+		ytdlpStart := time.Now()
+		logging.Info("[CLIP] yt-dlp start", nil)
+		var firstProgress sync.Once
+		
 		err := s.ytdlp.Download(ctx, url, opts, jobID, func(p ytdlp.ProgressEvent) {
-			// Fake progress up to 50% for Stage A
-			p.Percent = p.Percent * 0.5
-			progressFn(p.Percent, p.SpeedBps, p.ETASec, p.Downloaded, p.Total)
+			firstProgress.Do(func() {
+				logging.Info(fmt.Sprintf("[CLIP] first download progress: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
+			})
+			scaledPct := 5.0 + (p.Percent * 0.80)
+			progressFn(scaledPct, p.SpeedBps, p.ETASec, p.Downloaded, p.Total)
 		})
 		if err != nil {
 			_ = os.Remove(stage1Path)
 			return "", mapDownloadError(err)
 		}
+		logging.Info(fmt.Sprintf("[CLIP] yt-dlp complete: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
 
-		// Progress for Stage B
-		progressFn(50.0, nil, nil, nil, nil)
+		progressFn(85.0, nil, nil, nil, nil)
 
-		// Stage B: Exact Boundary Correction
+		ffmpegStart := time.Now()
+		logging.Info("[CLIP] ffmpeg start", nil)
+		
+		// Stage B: Exact Boundary Correction (Stream copy for speed)
 		args := []string{
 			"-y",
 			"-i", stage1Path,
 			"-ss", fmt.Sprintf("%.3f", startSec),
 			"-to", fmt.Sprintf("%.3f", endSec),
-			"-c:v", "libx264",
-			"-preset", "ultrafast",
-			"-c:a", "copy",
+			"-c", "copy",
 			tempPath,
 		}
-		err = s.ffmpeg.Run(ctx, jobID, args...)
+		err = s.ffmpeg.RunProgress(ctx, jobID, ffmpegProgressFn, args...)
 		_ = os.Remove(stage1Path)
 		if err != nil {
 			_ = os.Remove(tempPath)
 			return "", fmt.Errorf("FFMPEG_FAILED")
 		}
-
-		progressFn(100.0, nil, nil, nil, nil)
+		logging.Info(fmt.Sprintf("[CLIP] ffmpeg complete: %d ms", time.Since(ffmpegStart).Milliseconds()), nil)
 	}
 
-	finalPath, err := s.atomicMoveWithTitle(tempPath, jobType, title)
+	progressFn(99.0, nil, nil, nil, nil)
+	
+	finalPath, err := s.atomicMoveWithTitle(tempPath, jobType, finalTitle)
 	if err != nil {
 		return "", err
 	}
+	
+	logging.Info(fmt.Sprintf("[CLIP] total: %d ms", time.Since(startT).Milliseconds()), nil)
+	progressFn(100.0, nil, nil, nil, nil)
 	return finalPath, nil
 }
 

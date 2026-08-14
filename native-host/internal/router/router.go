@@ -183,6 +183,7 @@ func (r *Router) handleStartDownload(msg *host.RawMessage) error {
 func (r *Router) handleStartClip(msg *host.RawMessage) error {
 	var payload struct {
 		VideoID    string         `json:"videoId"`
+		Title      string         `json:"title"`
 		StartTime  float64        `json:"startTime"`
 		EndTime    float64        `json:"endTime"`
 		OutputType string         `json:"outputType"`
@@ -194,7 +195,7 @@ func (r *Router) handleStartClip(msg *host.RawMessage) error {
 		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", err.Error())
 	}
 
-	jobID, err := r.jobs.StartClip(payload.VideoID, payload.StartTime, payload.EndTime, payload.OutputType, payload.Quality, payload.Format, payload.Cookies)
+	jobID, err := r.jobs.StartClip(payload.VideoID, payload.Title, payload.StartTime, payload.EndTime, payload.OutputType, payload.Quality, payload.Format, payload.Cookies)
 	if err != nil {
 		return r.h.SendError(msg.RequestID, "START_FAILED", err.Error())
 	}
