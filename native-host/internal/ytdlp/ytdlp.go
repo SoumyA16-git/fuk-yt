@@ -134,6 +134,10 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 
 	out, err := s.runCapture(ctx, args...)
 	if err != nil {
+		logging.Error("ytdlp: getVideoInfo failed", map[string]interface{}{
+			"url": url,
+			"err": err.Error(),
+		})
 		return nil, mapYtdlpError(err)
 	}
 	return parseVideoInfo(out, url)
@@ -161,6 +165,10 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 
 	out, err := s.runCapture(ctx, args...)
 	if err != nil {
+		logging.Error("ytdlp: getFormats failed", map[string]interface{}{
+			"videoId": videoID,
+			"err":     err.Error(),
+		})
 		return nil, mapYtdlpError(err)
 	}
 	return parseFormats(out)
