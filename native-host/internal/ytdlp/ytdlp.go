@@ -150,6 +150,7 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 		"--no-playlist",
 		"--no-warnings",
 		"--retries", "5",
+		"--extractor-args", "youtube:player_client=android,web",
 	}
 
 	vid := extractVideoID(url)
@@ -204,6 +205,7 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 		"--no-playlist",
 		"--no-warnings",
 		"--retries", "5",
+		"--extractor-args", "youtube:player_client=android,web",
 	}
 	if cookiePath != "" {
 		args = append(args, "--cookies", cookiePath)
@@ -218,7 +220,10 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 		_ = os.WriteFile(cachePath, out, 0600)
 
 		if formats, err := parseFormats(out); err == nil {
-			return formats, nil
+			if len(formats) > 0 {
+				return formats, nil
+			}
+			runErr = fmt.Errorf("YouTube blocked the request or no formats were found (try clearing cookies or wait)")
 		}
 	}
 
