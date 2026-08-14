@@ -1,5 +1,7 @@
 <div align="center">
 
+![Fuk-YT logo](https://i.ibb.co/JjQfKqyx/ICON.png)
+
 # ⚡ Fuk-YT — Free YouTube Video & Audio Downloader for Chrome (Windows)
 
 ### Download YouTube videos in 1080p/4K, extract MP3 audio, and trim clips — directly from the YouTube page, 100% local and private.

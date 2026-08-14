@@ -238,6 +238,8 @@ func (s *Service) Download(
 		args = append(args, "--download-sections", opts.SectionSpec)
 		if opts.ForceKeyframesAtCuts {
 			args = append(args, "--force-keyframes-at-cuts")
+			// Pass ultrafast preset to ffmpeg to make re-encoding almost instant
+			args = append(args, "--downloader-args", "ffmpeg:-preset ultrafast")
 		}
 	}
 
