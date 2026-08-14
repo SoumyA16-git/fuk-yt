@@ -152,6 +152,15 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 		"--retries", "5",
 		"--extractor-args", "youtube:player_client=android,web",
 	}
+
+	vid := extractVideoID(url)
+	if vid != "" {
+		cachePath := filepath.Join(os.TempDir(), fmt.Sprintf("fuk-yt-info-%s.json", vid))
+		if _, err := os.Stat(cachePath); err == nil {
+			args = append(args, "--load-info-json", cachePath)
+		}
+	}
+
 	if cookiePath != "" {
 		args = append(args, "--cookies", cookiePath)
 	}
