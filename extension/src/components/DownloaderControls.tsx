@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Film, Music, Scissors, Star, Image, Loader2 } from 'lucide-react';
+import { Film, Music, Scissors, Star, Image, Loader2, Coffee } from 'lucide-react';
 import type { EngineInfo, FormatInfo, VideoInfo, Job, JobState } from '@/types';
 import { NativeClient } from '@/services/nativeClient';
 import { EngineStatusPanel } from './EngineStatus';
@@ -319,6 +319,42 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
 
         {/* Right Section: GitHub Stats + Engine Status */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Buy Me a Coffee Widget */}
+          <a
+            href="https://ko-fi.com/J1RO252466"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              height: 32,
+              padding: '0 12px',
+              borderRadius: 16,
+              background: theme.cardSubtleBg,
+              border: `1px solid ${theme.cardSubtleBorder}`,
+              color: theme.text,
+              textDecoration: 'none',
+              fontSize: 12,
+              fontWeight: 500,
+              transition: theme.transition,
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#72a4f215'; // slight tint
+              e.currentTarget.style.borderColor = '#72a4f2';
+              e.currentTarget.style.color = '#72a4f2';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = theme.cardSubtleBg;
+              e.currentTarget.style.borderColor = theme.cardSubtleBorder;
+              e.currentTarget.style.color = theme.text;
+            }}
+          >
+            <Coffee size={14} />
+            <span>Buy Me a Coffee</span>
+          </a>
+
           {/* GitHub Repository Widget */}
           <a
             href="https://github.com/SoumyA16-git/fuk-yt"
