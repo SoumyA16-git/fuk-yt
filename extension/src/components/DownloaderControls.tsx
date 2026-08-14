@@ -443,8 +443,8 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             title="FUK-YT"
             style={{
               height: 32,
-              width: 32,
-              minWidth: 32,
+              width: 100,
+              minWidth: 100,
               marginLeft: 4,
               backgroundImage: `url(${typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL('ICON.png') : 'ICON.png'})`,
               backgroundSize: 'contain',
