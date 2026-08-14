@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,6 +16,10 @@ import (
 	"github.com/fukyt/host/internal/server"
 	"github.com/google/uuid"
 )
+
+// retryDelays defines the backoff schedule for auto-retry.
+// 5 attempts total: immediate, then 1s, 2s, 4s, 8s wait before each retry.
+var retryDelays = []time.Duration{0, 1 * time.Second, 2 * time.Second, 4 * time.Second, 8 * time.Second}
 
 // JobState mirrors the extension-side simplified state set.
 type JobState string
@@ -161,21 +166,56 @@ func (m *Manager) GetJobStatus(jobID string) (*Job, error) {
 // ============================================================
 
 func (m *Manager) runDownload(ctx context.Context, jobID, videoID, outputType, quality, format string) {
+	progressFn := m.makeProgressFn(jobID)
+
 	var (
 		finalPath string
 		runErr    error
 	)
 
-	progressFn := m.makeProgressFn(jobID)
+	for attempt, delay := range retryDelays {
+		if ctx.Err() != nil {
+			return
+		}
 
-	if outputType == "audio" {
-		finalPath, runErr = m.downSvc.DownloadAudio(ctx, videoID, format, quality, jobID, progressFn)
-	} else {
-		finalPath, runErr = m.downSvc.DownloadVideo(ctx, videoID, quality, format, jobID, progressFn)
+		if delay > 0 {
+			logging.Info("jobs: retrying download", map[string]interface{}{
+				"jobId": jobID, "attempt": attempt + 1, "delayMs": delay.Milliseconds(),
+			})
+			select {
+			case <-time.After(delay):
+			case <-ctx.Done():
+				return
+			}
+		}
+
+		if outputType == "audio" {
+			finalPath, runErr = m.downSvc.DownloadAudio(ctx, videoID, format, quality, jobID, progressFn)
+		} else {
+			finalPath, runErr = m.downSvc.DownloadVideo(ctx, videoID, quality, format, jobID, progressFn)
+		}
+
+		if ctx.Err() != nil {
+			// Cancelled by user — already handled in CancelJob
+			return
+		}
+
+		if runErr == nil {
+			break // Success
+		}
+
+		errStr := runErr.Error()
+		// Do not retry if context cancelled or video is definitively unavailable
+		if strings.Contains(errStr, "UNSUPPORTED_VIDEO") || strings.Contains(errStr, "INVALID_URL") {
+			break
+		}
+
+		logging.Error("jobs: download attempt failed", map[string]interface{}{
+			"jobId": jobID, "attempt": attempt + 1, "err": errStr,
+		})
 	}
 
 	if ctx.Err() != nil {
-		// Cancelled by user — already handled in CancelJob
 		return
 	}
 
@@ -188,7 +228,7 @@ func (m *Manager) runDownload(ctx context.Context, jobID, videoID, outputType, q
 	}
 
 	if runErr != nil {
-		logging.Error("jobs: download failed", map[string]interface{}{"jobId": jobID, "err": runErr.Error()})
+		logging.Error("jobs: download failed (all attempts exhausted)", map[string]interface{}{"jobId": jobID, "err": runErr.Error()})
 		m.mu.Lock()
 		job.State = StateFailed
 		job.ErrorCode = runErr.Error()
@@ -220,7 +260,46 @@ func (m *Manager) runDownload(ctx context.Context, jobID, videoID, outputType, q
 func (m *Manager) runClip(ctx context.Context, jobID, videoID string, startSec, endSec float64, outputType, quality, format string) {
 	progressFn := m.makeProgressFn(jobID)
 
-	finalPath, runErr := m.downSvc.DownloadClip(ctx, videoID, startSec, endSec, outputType, quality, format, jobID, progressFn)
+	var (
+		finalPath string
+		runErr    error
+	)
+
+	for attempt, delay := range retryDelays {
+		if ctx.Err() != nil {
+			return
+		}
+
+		if delay > 0 {
+			logging.Info("jobs: retrying clip", map[string]interface{}{
+				"jobId": jobID, "attempt": attempt + 1, "delayMs": delay.Milliseconds(),
+			})
+			select {
+			case <-time.After(delay):
+			case <-ctx.Done():
+				return
+			}
+		}
+
+		finalPath, runErr = m.downSvc.DownloadClip(ctx, videoID, startSec, endSec, outputType, quality, format, jobID, progressFn)
+
+		if ctx.Err() != nil {
+			return
+		}
+
+		if runErr == nil {
+			break
+		}
+
+		errStr := runErr.Error()
+		if strings.Contains(errStr, "UNSUPPORTED_VIDEO") || strings.Contains(errStr, "INVALID_URL") {
+			break
+		}
+
+		logging.Error("jobs: clip attempt failed", map[string]interface{}{
+			"jobId": jobID, "attempt": attempt + 1, "err": errStr,
+		})
+	}
 
 	if ctx.Err() != nil {
 		return
@@ -234,7 +313,7 @@ func (m *Manager) runClip(ctx context.Context, jobID, videoID string, startSec, 
 	}
 
 	if runErr != nil {
-		logging.Error("jobs: clip failed", map[string]interface{}{"jobId": jobID, "err": runErr.Error()})
+		logging.Error("jobs: clip failed (all attempts exhausted)", map[string]interface{}{"jobId": jobID, "err": runErr.Error()})
 		m.mu.Lock()
 		job.State = StateFailed
 		job.ErrorCode = runErr.Error()
