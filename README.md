@@ -15,6 +15,9 @@
 
 **[⬇️ Download Latest Release](https://github.com/SoumyA16-git/fuk-yt/releases) · [🐛 Report a Bug](https://github.com/SoumyA16-git/fuk-yt/issues) · [💡 Request a Feature](https://github.com/SoumyA16-git/fuk-yt/issues)**
 
+<br>
+<a href='https://ko-fi.com/J1RO252466' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
 </div>
 
 ---
@@ -227,5 +230,8 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
 **Keywords:** YouTube downloader Chrome extension · download YouTube videos 1080p 4K · YouTube to MP3 converter · YouTube clip trimmer · yt-dlp GUI · free local YouTube downloader Windows · no ads no server video downloader
 
 Made with ❤️ by [**SoumyA16-git**](https://github.com/SoumyA16-git)
+
+<br>
+<a href='https://ko-fi.com/J1RO252466' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
 </div>
