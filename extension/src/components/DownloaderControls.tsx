@@ -45,7 +45,7 @@ function isNewerVersion(remote: string, local: string): boolean {
 const TAB_BUTTONS: Array<{ id: TabId; label: string; icon: React.ReactNode; ariaLabel: string }> = [
   { id: 'video', label: 'Video', icon: <Film size={14} />, ariaLabel: 'Video download' },
   { id: 'audio', label: 'Audio', icon: <Music size={14} />, ariaLabel: 'Audio download' },
-  { id: 'clip',  label: 'Clip',  icon: <Scissors size={14} />, ariaLabel: 'Clip download' },
+  { id: 'clip', label: 'Clip', icon: <Scissors size={14} />, ariaLabel: 'Clip download' },
   { id: 'thumbnail', label: 'Thumbnail', icon: <Image size={14} />, ariaLabel: 'Thumbnail download' },
 ];
 
@@ -70,7 +70,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
       const downloadUrl = `https://github.com/SoumyA16-git/fuk-yt/releases/download/${githubVersion}/native-host.exe`;
       // Pass both the binary URL and the version so the native host can download the extension ZIP too.
       await NativeClient.triggerUpdate(downloadUrl, githubVersion);
-      
+
       setTimeout(async () => {
         let attempts = 0;
         const interval = setInterval(async () => {
@@ -321,7 +321,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {/* Buy Me a Coffee Widget */}
           <a
-            href="https://ko-fi.com/J1RO252466"
+            href="https://ko-fi.com/J1R0252466"
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -474,7 +474,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             </span>
           </div>
 
-           {/* High Quality App Icon */}
+          {/* High Quality App Icon */}
           <div
             title="FUK-YT"
             style={{
@@ -485,7 +485,7 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
               backgroundImage: `url(${typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL('ICON.png') : 'ICON.png'})`,
               backgroundSize: 'contain',
               backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat', 
+              backgroundRepeat: 'no-repeat',
               flexShrink: 0,
             }}
           />
