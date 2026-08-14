@@ -174,22 +174,46 @@ func (s *Service) DownloadClip(ctx context.Context, videoID string, startSec, en
 	}
 
 	if outputType == "audio" {
+		stage1Path := tempPath + ".stage1." + ext
 		opts := ytdlp.DownloadOptions{
 			ExtractAudio:         true,
 			AudioFormat:          ext,
 			AudioQuality:         bitrateToYtdlp(quality),
-			OutputPath:           tempPath,
+			OutputPath:           stage1Path,
 			SectionSpec:          sectionSpec,
-			ForceKeyframesAtCuts: true,
+			ForceKeyframesAtCuts: false,
+			RetainTimestamps:     true,
 			Cookies:              cookies,
 		}
 		err := s.ytdlp.Download(ctx, url, opts, jobID, func(p ytdlp.ProgressEvent) {
+			p.Percent = p.Percent * 0.5
 			progressFn(p.Percent, p.SpeedBps, p.ETASec, p.Downloaded, p.Total)
 		})
 		if err != nil {
-			_ = os.Remove(tempPath)
+			_ = os.Remove(stage1Path)
 			return "", mapDownloadError(err)
 		}
+
+		progressFn(50.0, nil, nil, nil, nil)
+
+		// Stage B: Exact Boundary Correction (Audio is precise enough with stream copy)
+		args := []string{
+			"-y",
+			"-i", stage1Path,
+			"-ss", fmt.Sprintf("%.3f", startSec),
+			"-to", fmt.Sprintf("%.3f", endSec),
+			"-c:a", "copy",
+			tempPath,
+		}
+		err = s.ffmpeg.Run(ctx, jobID, args...)
+		_ = os.Remove(stage1Path)
+		if err != nil {
+			_ = os.Remove(tempPath)
+			return "", fmt.Errorf("FFMPEG_FAILED")
+		}
+
+		progressFn(100.0, nil, nil, nil, nil)
+
 	} else {
 		formatStr := "bestvideo[height<=1080]+bestaudio/best[height<=1080]"
 		stage1Path := tempPath + ".stage1.mp4"

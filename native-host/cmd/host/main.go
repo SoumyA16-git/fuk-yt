@@ -29,7 +29,7 @@ import (
 	"github.com/fukyt/host/internal/ytdlp"
 )
 
-var Version = "v0.2.17"
+var Version = "v0.2.18"
 
 type Config struct {
 	InstallDir   string

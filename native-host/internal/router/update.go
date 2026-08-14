@@ -3,8 +3,6 @@ package router
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,8 +23,8 @@ func (r *Router) handleTriggerUpdate(msg *host.RawMessage) error {
 		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", err.Error())
 	}
 
-	if payload.DownloadURL == "" {
-		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", "downloadUrl is required")
+	if payload.Version == "" {
+		return r.h.SendError(msg.RequestID, "INVALID_REQUEST", "version is required")
 	}
 
 	exePath, err := os.Executable()
@@ -34,154 +32,124 @@ func (r *Router) handleTriggerUpdate(msg *host.RawMessage) error {
 		return r.h.SendError(msg.RequestID, "UPDATE_FAILED", "Could not find host executable path: "+err.Error())
 	}
 	exeDir := filepath.Dir(exePath)
-	exeName := filepath.Base(exePath)
-
-	newExePath := exePath + ".new"
 	updaterBatPath := filepath.Join(exeDir, "updater.bat")
-	extensionZipPath := filepath.Join(exeDir, "extension.zip")
 
-	// 1. Download native-host.exe
-	logging.Info("updater: downloading new binary", map[string]interface{}{"url": payload.DownloadURL})
-	resp, err := http.Get(payload.DownloadURL)
-	if err != nil {
-		return r.h.SendError(msg.RequestID, "DOWNLOAD_FAILED", "Failed to request download URL: "+err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return r.h.SendError(msg.RequestID, "DOWNLOAD_FAILED", fmt.Sprintf("Download failed with HTTP %d", resp.StatusCode))
-	}
-
-	out, err := os.Create(newExePath)
-	if err != nil {
-		return r.h.SendError(msg.RequestID, "FILE_WRITE_FAILED", "Failed to create staging file: "+err.Error())
-	}
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		out.Close()
-		return r.h.SendError(msg.RequestID, "DOWNLOAD_INCOMPLETE", "Failed to save download stream: "+err.Error())
-	}
-	out.Close()
-
-	// 2. Download fuk-yt-extension.zip if version is provided
-	if payload.Version != "" {
-		extUrl := fmt.Sprintf("https://github.com/SoumyA16-git/fuk-yt/releases/download/%s/fuk-yt-extension.zip", payload.Version)
-		logging.Info("updater: downloading extension zip", map[string]interface{}{"url": extUrl})
-		extResp, err := http.Get(extUrl)
-		if err == nil && extResp.StatusCode == http.StatusOK {
-			extOut, err := os.Create(extensionZipPath)
-			if err == nil {
-				io.Copy(extOut, extResp.Body)
-				extOut.Close()
-			}
-		}
-		if extResp != nil {
-			extResp.Body.Close()
-		}
-	}
-
-	// 3. Auto-detect Extension Directory across Chrome / Edge / Brave profiles and known candidate folders
+	// Auto-detect Extension Directory across Chrome / Edge / Brave profiles and known candidate folders
 	detectedExtDir := findExtensionDirectory(exeDir)
 	logging.Info("updater: detected extension directory", map[string]interface{}{"path": detectedExtDir})
 
-	// 4. Create updater.bat
+	// Create updater.bat
 	logging.Info("updater: creating Windows batch script updater", map[string]interface{}{"path": updaterBatPath})
+
+	engineUrl := fmt.Sprintf("https://github.com/SoumyA16-git/fuk-yt/releases/download/%s/fuk-yt-engine-windows.zip", payload.Version)
+	extUrl := fmt.Sprintf("https://github.com/SoumyA16-git/fuk-yt/releases/download/%s/fuk-yt-extension.zip", payload.Version)
+
 	batContent := fmt.Sprintf(`@echo off
 setlocal enabledelayedexpansion
-echo [%%date%% %%time%%] Updater started > updater.log
-set "EXE_PATH=%s"
-set "NEW_PATH=%s"
-set "EXE_NAME=%s"
-set "OLD_PATH=%s.old"
-set "EXT_ZIP=%s"
-set "DETECTED_EXT_DIR=%s"
 
-timeout /t 1 /nobreak > NUL
+echo ===================================================
+echo             FUK-YT AUTO UPDATER
+echo ===================================================
+echo.
+echo Please wait, update in progress...
+echo.
 
-:: Replace Native Host Binary
-if exist "!OLD_PATH!" del /f /q "!OLD_PATH!" > NUL 2>&1
-echo [%%date%% %%time%%] Renaming active binary to .old >> updater.log
-ren "!EXE_PATH!" "!EXE_NAME!.old" >> updater.log 2>&1
-:: Extract Extension if zip exists
-if exist "!EXT_ZIP!" (
-    echo [%%date%% %%time%%] Extension ZIP found. Attempting extraction. >> updater.log
-    set "EXT_DIR=!DETECTED_EXT_DIR!"
-    if "!EXT_DIR!"=="" (
-        if exist "%%~dp0..\..\extension\manifest.json" (
-            set "EXT_DIR=%%~dp0..\..\extension"
-        ) else if exist "%%~dp0..\extension\manifest.json" (
-            set "EXT_DIR=%%~dp0..\extension"
-        ) else if exist "%%~dp0..\..\fuk-yt-extension\manifest.json" (
-            set "EXT_DIR=%%~dp0..\..\fuk-yt-extension"
-        ) else if exist "%%~dp0..\fuk-yt-extension\manifest.json" (
-            set "EXT_DIR=%%~dp0..\fuk-yt-extension"
-        ) else if exist "%%~dp0extension\manifest.json" (
-            set "EXT_DIR=%%~dp0extension"
-        ) else if exist "%%~dp0fuk-yt-extension\manifest.json" (
-            set "EXT_DIR=%%~dp0fuk-yt-extension"
-        ) else if exist "%%USERPROFILE%%\Downloads\fuk-yt-extension\manifest.json" (
-            set "EXT_DIR=%%USERPROFILE%%\Downloads\fuk-yt-extension"
-        ) else if exist "%%USERPROFILE%%\Desktop\fuk-yt-extension\manifest.json" (
-            set "EXT_DIR=%%USERPROFILE%%\Desktop\fuk-yt-extension"
-        )
+:: 1. Wait for native-host to exit so files unlock
+timeout /t 2 /nobreak > NUL
+
+:: 2. Force close browsers
+echo [1/5] Closing browsers...
+taskkill /F /IM chrome.exe > NUL 2>&1
+taskkill /F /IM msedge.exe > NUL 2>&1
+taskkill /F /IM brave.exe > NUL 2>&1
+
+:: 3. Download updates
+echo [2/5] Downloading Native Engine %s...
+powershell -NoProfile -Command "$ProgressPreference = 'Continue'; Invoke-WebRequest -Uri '%s' -OutFile 'fuk-yt-engine-windows.zip'"
+
+echo [3/5] Downloading Extension %s...
+powershell -NoProfile -Command "$ProgressPreference = 'Continue'; Invoke-WebRequest -Uri '%s' -OutFile 'fuk-yt-extension.zip'"
+
+:: 4. Extract Engine
+echo [4/5] Extracting Engine files...
+if exist "engine_temp" rmdir /s /q "engine_temp"
+powershell -NoProfile -Command "Expand-Archive -Path 'fuk-yt-engine-windows.zip' -DestinationPath 'engine_temp' -Force"
+xcopy /s /e /y "engine_temp\*" "%%~dp0" > NUL
+rmdir /s /q "engine_temp"
+del /f /q "fuk-yt-engine-windows.zip"
+
+:: 5. Extract Extension
+set "EXT_DIR=%s"
+if "!EXT_DIR!"=="" (
+    if exist "%%~dp0..\..\extension\manifest.json" (
+        set "EXT_DIR=%%~dp0..\..\extension"
+    ) else if exist "%%~dp0..\extension\manifest.json" (
+        set "EXT_DIR=%%~dp0..\extension"
+    ) else if exist "%%~dp0..\..\fuk-yt-extension\manifest.json" (
+        set "EXT_DIR=%%~dp0..\..\fuk-yt-extension"
+    ) else if exist "%%~dp0..\fuk-yt-extension\manifest.json" (
+        set "EXT_DIR=%%~dp0..\fuk-yt-extension"
+    ) else if exist "%%~dp0extension\manifest.json" (
+        set "EXT_DIR=%%~dp0extension"
+    ) else if exist "%%~dp0fuk-yt-extension\manifest.json" (
+        set "EXT_DIR=%%~dp0fuk-yt-extension"
+    ) else if exist "%%USERPROFILE%%\Downloads\fuk-yt-extension\manifest.json" (
+        set "EXT_DIR=%%USERPROFILE%%\Downloads\fuk-yt-extension"
+    ) else if exist "%%USERPROFILE%%\Desktop\fuk-yt-extension\manifest.json" (
+        set "EXT_DIR=%%USERPROFILE%%\Desktop\fuk-yt-extension"
     )
-    
-    if not "!EXT_DIR!"=="" (
-        echo [%%date%% %%time%%] Extracting extension to !EXT_DIR!_new >> updater.log
-        if exist "!EXT_DIR!_new" rmdir /s /q "!EXT_DIR!_new"
-        powershell -NoProfile -Command "Expand-Archive -Path '!EXT_ZIP!' -DestinationPath '!EXT_DIR!_new' -Force" >> updater.log 2>&1
-        echo [%%date%% %%time%%] Copying files to overwrite old extension >> updater.log
-        xcopy /s /e /y "!EXT_DIR!_new\*" "!EXT_DIR!\" >> updater.log 2>&1
-        rmdir /s /q "!EXT_DIR!_new" >> updater.log 2>&1
-        echo [%%date%% %%time%%] Extension extracted successfully >> updater.log
-    ) else (
-        echo [%%date%% %%time%%] Could not locate extension folder. >> updater.log
-    )
-    del /f /q "!EXT_ZIP!" > NUL 2>&1
 )
 
-echo [%%date%% %%time%%] Renaming new binary to !EXE_NAME! >> updater.log
-ren "!NEW_PATH!" "!EXE_NAME!" >> updater.log 2>&1
-
-:: Update yt-dlp if present in binary directory
-if exist "%%~dp0yt-dlp.exe" (
-    echo [%%date%% %%time%%] Updating yt-dlp binary >> updater.log
-    start /b "" "%%~dp0yt-dlp.exe" -U >> updater.log 2>&1
-) else if exist "%%~dp0bin\yt-dlp.exe" (
-    echo [%%date%% %%time%%] Updating yt-dlp binary in bin >> updater.log
-    start /b "" "%%~dp0bin\yt-dlp.exe" -U >> updater.log 2>&1
+if not "!EXT_DIR!"=="" (
+    echo [5/5] Extracting Extension...
+    if exist "ext_temp" rmdir /s /q "ext_temp"
+    powershell -NoProfile -Command "Expand-Archive -Path 'fuk-yt-extension.zip' -DestinationPath 'ext_temp' -Force"
+    xcopy /s /e /y "ext_temp\*" "!EXT_DIR!\" > NUL
+    rmdir /s /q "ext_temp"
+    echo Extension updated at: !EXT_DIR!
+) else (
+    echo [!] Could not locate extension folder. Extension update skipped.
 )
+del /f /q "fuk-yt-extension.zip" > NUL 2>&1
 
-timeout /t 1 /nobreak > NUL
-if exist "!OLD_PATH!" del /f /q "!OLD_PATH!" > NUL 2>&1
-
-echo [%%date%% %%time%%] Finished successfully >> updater.log
+echo.
+echo ===================================================
+echo     UPDATE COMPLETE SUCCESSFULLY!
+echo ===================================================
+echo Running fresh install.bat to verify setup...
+if exist "%%~dp0install.bat" (
+    call "%%~dp0install.bat"
+) else (
+    echo.
+    echo You can now reopen your browser.
+    echo.
+    pause
+)
 del "%%~f0" & exit
-`, exePath, newExePath, exeName, exePath, extensionZipPath, detectedExtDir)
+`, payload.Version, engineUrl, payload.Version, extUrl, detectedExtDir)
 
 	err = os.WriteFile(updaterBatPath, []byte(batContent), 0755)
 	if err != nil {
 		return r.h.SendError(msg.RequestID, "UPDATER_SCRIPT_FAILED", "Failed to write updater script: "+err.Error())
 	}
 
-	// 5. Send success response before process exits
+	// Send success response before process exits
 	err = r.h.SendResponse(msg.RequestID, map[string]bool{"updating": true})
 	if err != nil {
 		logging.Warn("updater: failed to send response to extension: " + err.Error())
 	}
 
-	// 6. Start updater.bat detached and exit immediately
-	logging.Info("updater: launching updater.bat detached", nil)
-	cmd := exec.Command("cmd", "/c", "updater.bat")
+	// Start updater.bat in a visible terminal
+	logging.Info("updater: launching updater.bat in visible terminal", nil)
+	cmd := exec.Command("cmd", "/c", "start", "cmd", "/c", "updater.bat")
 	cmd.Dir = exeDir
+	// We want the new window to be detached from this process group
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		HideWindow:    true,
-		CreationFlags: 0x08000000, // CREATE_NO_WINDOW
+		CreationFlags: 0x00000008, // DETACHED_PROCESS
 	}
+
 	err = cmd.Start()
 	if err != nil {
-		_ = os.Remove(newExePath)
-		_ = os.Remove(extensionZipPath)
 		_ = os.Remove(updaterBatPath)
 		return r.h.SendError(msg.RequestID, "UPDATER_LAUNCH_FAILED", "Failed to start updater script: "+err.Error())
 	}
