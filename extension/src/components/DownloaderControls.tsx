@@ -357,8 +357,8 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                 color: '#f1c40f',
               }}
             >
-              <Star size={12} fill="#f1c40f" stroke="#f1c40f" />
-              <span style={{ fontSize: 11, fontWeight: 600 }}>
+              <Star size={12} fill="#f1c40f" stroke="#f1c40f" style={{ display: 'block' }} />
+              <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1, display: 'block' }}>
                 {starsCount !== null ? starsCount : 'Star'}
               </span>
             </div>

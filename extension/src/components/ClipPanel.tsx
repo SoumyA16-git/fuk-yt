@@ -212,10 +212,10 @@ export function ClipPanel({
       {/* Controls & Action Row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         
-        {/* Left: Start / End Inputs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.pillBg, padding: '3px 8px', borderRadius: 16, border: `1px solid ${theme.border}`, transition: theme.transition }}>
-            <span style={{ fontSize: 11, color: theme.textSecondary }}>Start</span>
+        {/* Left: Start / End / Duration / Reset */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 28, background: theme.pillBg, padding: '0 10px', borderRadius: 14, border: `1px solid ${theme.border}`, transition: theme.transition }}>
+            <span style={{ fontSize: 11, color: theme.textSecondary, fontWeight: 500, userSelect: 'none' }}>Start</span>
             <input
               id="fyk-clip-start-input"
               type="text"
@@ -224,12 +224,12 @@ export function ClipPanel({
               onBlur={commitStartText}
               onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
               disabled={isActive}
-              style={{ width: 44, background: 'transparent', border: 'none', color: theme.text, fontSize: 12, fontWeight: 600, textAlign: 'center', outline: 'none' }}
+              style={{ width: 34, background: 'transparent', border: 'none', color: theme.text, fontSize: 12, fontWeight: 600, textAlign: 'center', outline: 'none', padding: 0, margin: 0 }}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.pillBg, padding: '3px 8px', borderRadius: 16, border: `1px solid ${theme.border}`, transition: theme.transition }}>
-            <span style={{ fontSize: 11, color: theme.textSecondary }}>End</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 28, background: theme.pillBg, padding: '0 10px', borderRadius: 14, border: `1px solid ${theme.border}`, transition: theme.transition }}>
+            <span style={{ fontSize: 11, color: theme.textSecondary, fontWeight: 500, userSelect: 'none' }}>End</span>
             <input
               id="fyk-clip-end-input"
               type="text"
@@ -238,19 +238,40 @@ export function ClipPanel({
               onBlur={commitEndText}
               onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
               disabled={isActive}
-              style={{ width: 44, background: 'transparent', border: 'none', color: theme.text, fontSize: 12, fontWeight: 600, textAlign: 'center', outline: 'none' }}
+              style={{ width: 34, background: 'transparent', border: 'none', color: theme.text, fontSize: 12, fontWeight: 600, textAlign: 'center', outline: 'none', padding: 0, margin: 0 }}
             />
           </div>
 
-          <div style={{ padding: '4px 10px', borderRadius: 16, background: theme.cardSubtleBg, border: `1px solid ${theme.cardSubtleBorder}`, fontSize: 11, color: theme.textSecondary, transition: theme.transition }}>
-            Duration: <strong style={{ color: theme.text }}>{formatTimestamp(clipDuration)}</strong>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 28, background: theme.pillBg, padding: '0 10px', borderRadius: 14, border: `1px solid ${theme.border}`, transition: theme.transition }}>
+            <span style={{ fontSize: 11, color: theme.textSecondary, fontWeight: 500, userSelect: 'none' }}>Duration</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: theme.text }}>{formatTimestamp(clipDuration)}</span>
           </div>
 
           <button
             id="fyk-clip-reset-btn"
             onClick={handleReset}
             disabled={isActive}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: theme.textSecondary, fontSize: 11, cursor: 'pointer', transition: theme.transition }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              height: 28,
+              padding: '0 8px',
+              borderRadius: 14,
+              background: 'transparent',
+              border: 'none',
+              color: theme.textSecondary,
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: isActive ? 'not-allowed' : 'pointer',
+              transition: theme.transition,
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) e.currentTarget.style.color = theme.text;
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) e.currentTarget.style.color = theme.textSecondary;
+            }}
           >
             <RotateCcw size={11} />
             <span>Reset</span>
