@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -69,10 +70,9 @@ type ProgressEvent struct {
 var validVideoIDRe = regexp.MustCompile(`^[A-Za-z0-9_\-]{8,16}$`)
 var validYTURLRe = regexp.MustCompile(`(?i)^https?://(www\.)?youtube\.com/(watch\?(?:.*&)?v=[A-Za-z0-9_\-]{8,16}|shorts/[A-Za-z0-9_\-]{8,16})`)
 
-// ValidateVideoID returns an error if the videoId is not a valid YouTube video ID (SEC-06).
-func ValidateVideoID(videoID string) error {
-	if !validVideoIDRe.MatchString(videoID) {
-		return fmt.Errorf("ytdlp: invalid videoId: %q", videoID)
+func ValidateVideoID(id string) error {
+	if !regexp.MustCompile(`^[a-zA-Z0-9_-]{11}$`).MatchString(id) {
+		return fmt.Errorf("INVALID_VIDEO_ID")
 	}
 	return nil
 }
@@ -85,7 +85,23 @@ func ValidateYouTubeURL(url string) error {
 	return nil
 }
 
-// VideoIDToURL builds a canonical watch URL from a videoId.
+func extractVideoID(u string) string {
+	parsed, err := url.Parse(u)
+	if err == nil {
+		if v := parsed.Query().Get("v"); v != "" {
+			return v
+		}
+	}
+	if strings.Contains(u, "youtu.be/") {
+		parts := strings.Split(u, "youtu.be/")
+		if len(parts) > 1 {
+			return strings.Split(parts[1], "?")[0]
+		}
+	}
+	return ""
+}
+
+// VideoIDToURL converts a clean ID to a full URL. from a videoId.
 func VideoIDToURL(videoID string) string {
 	return "https://www.youtube.com/watch?v=" + videoID
 }
@@ -127,7 +143,15 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 	}
 	defer cleanup()
 
-	args := []string{"--ignore-no-formats-error", "--ignore-config", "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
+	args := []string{
+		"--ignore-no-formats-error",
+		"--ignore-config",
+		"--dump-json",
+		"--no-playlist",
+		"--no-warnings",
+		"--retries", "5",
+		"--extractor-args", "youtube:player_client=android,web",
+	}
 	if cookiePath != "" {
 		args = append(args, "--cookies", cookiePath)
 	}
@@ -165,7 +189,15 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 	}
 	defer cleanup()
 
-	args := []string{"--ignore-no-formats-error", "--ignore-config", "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
+	args := []string{
+		"--ignore-no-formats-error",
+		"--ignore-config",
+		"--dump-json",
+		"--no-playlist",
+		"--no-warnings",
+		"--retries", "5",
+		"--extractor-args", "youtube:player_client=android,web",
+	}
 	if cookiePath != "" {
 		args = append(args, "--cookies", cookiePath)
 	}
@@ -174,6 +206,10 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 	out, runErr := s.runCapture(ctx, args...)
 
 	if len(out) > 0 {
+		// Cache the output for immediate download later
+		cachePath := filepath.Join(os.TempDir(), fmt.Sprintf("fuk-yt-info-%s.json", videoID))
+		_ = os.WriteFile(cachePath, out, 0600)
+
 		if formats, err := parseFormats(out); err == nil {
 			return formats, nil
 		}
@@ -191,9 +227,9 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 
 // DownloadOptions configures a yt-dlp download (FR-42).
 type DownloadOptions struct {
-	FormatID    string // yt-dlp format string (e.g. "bestvideo[height<=1080]+bestaudio")
-	MergeFormat string // output container (e.g. "mp4", "mkv")
-	OutputPath  string // full output path template
+	FormatID     string // yt-dlp format string (e.g. "bestvideo[height<=1080]+bestaudio")
+	MergeFormat  string // output container (e.g. "mp4", "mkv")
+	OutputPath   string // full output path template
 	ExtractAudio bool
 	AudioFormat  string // "mp3", "m4a", "opus"
 	AudioQuality string // bitrate string e.g. "192K"
@@ -221,6 +257,15 @@ func (s *Service) Download(
 		"--fragment-retries", "10",
 		"--file-access-retries", "10",
 		"-o", opts.OutputPath,
+	}
+
+	vid := extractVideoID(url)
+	if vid != "" {
+		cachePath := filepath.Join(os.TempDir(), fmt.Sprintf("fuk-yt-info-%s.json", vid))
+		if _, err := os.Stat(cachePath); err == nil {
+			args = append(args, "--load-info-json", cachePath)
+			// Optional: delete cache after use if desired, but keeping it is fine as temp dir clears on reboot.
+		}
 	}
 
 	cookiePath, cleanup, err := WriteCookiesFile(opts.Cookies)
@@ -339,13 +384,13 @@ func (s *Service) Download(
 // ============================================================
 
 type ytdlpRaw struct {
-	ID         string           `json:"id"`
-	Title      string           `json:"title"`
-	Channel    string           `json:"channel"`
-	Uploader   string           `json:"uploader"`
-	Duration   float64          `json:"duration"`
-	Thumbnail  string           `json:"thumbnail"`
-	Formats    []ytdlpRawFormat `json:"formats"`
+	ID        string           `json:"id"`
+	Title     string           `json:"title"`
+	Channel   string           `json:"channel"`
+	Uploader  string           `json:"uploader"`
+	Duration  float64          `json:"duration"`
+	Thumbnail string           `json:"thumbnail"`
+	Formats   []ytdlpRawFormat `json:"formats"`
 }
 
 type ytdlpRawFormat struct {
@@ -426,7 +471,6 @@ func parseFormats(data []byte) ([]FormatInfo, error) {
 }
 
 // parseProgressLine implementation moved to progress_parser.go
-
 
 func toBytes(val float64, unit string) float64 {
 	u := strings.ToLower(strings.TrimSpace(unit))
