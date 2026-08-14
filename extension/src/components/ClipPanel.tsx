@@ -345,8 +345,13 @@ export function ClipPanel({
         <ProgressIndicator
           job={activeJob}
           onCancel={async () => {
-            await NativeClient.cancelJob(activeJob.jobId);
-            onJobUpdate({ ...activeJob, state: 'cancelled' });
+            try {
+              await NativeClient.cancelJob(activeJob.jobId);
+            } catch (err) {
+              console.warn('cancelJob error:', err);
+            } finally {
+              onJobUpdate({ ...activeJob, state: 'cancelled' });
+            }
           }}
           onRetry={() => { onJobUpdate(null); handleDownload('video'); }}
           onDismiss={() => onJobUpdate(null)}

@@ -5,8 +5,14 @@ package process
 import (
 	"os"
 	"os/exec"
+	"os/signal"
 	"syscall"
 )
+
+func init() {
+	// Prevent CTRL_BREAK_EVENT from killing the native-host process
+	signal.Ignore(os.Interrupt)
+}
 
 // setSysProcAttr configures the command to create a new process group on Windows.
 // This allows killing the entire job process group (yt-dlp + ffmpeg) atomically (SEC-07).
