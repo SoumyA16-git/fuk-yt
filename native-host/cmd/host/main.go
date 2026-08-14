@@ -246,9 +246,9 @@ func run(cfg *Config) error {
 	jm := jobs.New(dlSvc, pm, pushFn)
 
 	// Pre-fetch binary versions for getEngineInfo responses
-	ctx5s, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	ytVer, _ := ytSvc.Version(ctx5s)
-	ffVer, _ := ffSvc.Version(ctx5s)
+	ctx10s, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ytVer, _ := ytSvc.Version(ctx10s)
+	ffVer, _ := ffSvc.Version(ctx10s)
 	cancel()
 
 	rtr := router.New(h, router.Config{

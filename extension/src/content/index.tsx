@@ -74,6 +74,12 @@ async function mountControls(url: string) {
 
   currentVideoId = videoId;
 
+  // Cleanup any orphaned instances from previous script injections
+  const existingContainer = document.getElementById('fuk-yt-controls-root');
+  if (existingContainer) {
+    existingContainer.remove();
+  }
+
   // Create container injected before the anchor element
   mountContainer = document.createElement('div');
   mountContainer.id = 'fuk-yt-controls-root';

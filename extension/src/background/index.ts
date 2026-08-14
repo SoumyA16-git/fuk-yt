@@ -10,7 +10,7 @@ import type { NativeEnvelope, NativeResponse, SWResponse } from '@/types';
 
 const NATIVE_HOST_ID = 'com.fukyt.host';
 const RECONNECT_MAX_DELAY_MS = 30_000;
-const REQUEST_TIMEOUT_MS = 30_000;
+const REQUEST_TIMEOUT_MS = 60_000;
 
 // ============================================================
 // Native Port management
