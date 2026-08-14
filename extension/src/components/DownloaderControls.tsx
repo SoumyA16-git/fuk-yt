@@ -433,6 +433,37 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
                 : 'Offline'}
             </span>
           </div>
+
+          {/* High Quality App Icon Pill Badge */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 32,
+              padding: '0 8px',
+              borderRadius: 16,
+              background: theme.cardSubtleBg,
+              border: `1px solid ${theme.cardSubtleBorder}`,
+              transition: theme.transition,
+              flexShrink: 0,
+              boxSizing: 'border-box',
+            }}
+            title="FUK-YT"
+          >
+            <img
+              src={typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL('ICON.png') : 'ICON.png'}
+              alt="FUK-YT"
+              style={{
+                height: 22,
+                width: 'auto',
+                maxHeight: 22,
+                maxWidth: 60,
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
+          </div>
         </div>
       </div>
 

@@ -73,19 +73,18 @@ function Popup() {
           borderBottom: '1px solid #272727',
         }}
       >
-        <div
+        <img
+          src="ICON.png"
+          alt="FUK-YT"
           style={{
-            width: 28,
-            height: 28,
-            background: '#ff0000',
-            borderRadius: 7,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            height: 30,
+            width: 'auto',
+            maxHeight: 30,
+            maxWidth: 100,
+            display: 'block',
+            objectFit: 'contain',
           }}
-        >
-          <Download size={15} color="#fff" />
-        </div>
+        />
         <div>
           <div style={{ fontWeight: 700, fontSize: 14, color: '#f1f1f1', letterSpacing: -0.3 }}>
             FUK-YT
