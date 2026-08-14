@@ -215,7 +215,7 @@ func (s *Service) DownloadClip(ctx context.Context, videoID string, startSec, en
 		progressFn(100.0, nil, nil, nil, nil)
 
 	} else {
-		formatStr := "bestvideo[height<=1080]+bestaudio/best[height<=1080]"
+		formatStr := buildVideoFormatStr("1080", ext)
 		stage1Path := tempPath + ".stage1.mp4"
 		opts := ytdlp.DownloadOptions{
 			FormatID:             formatStr,

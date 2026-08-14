@@ -6,6 +6,7 @@ package ytdlp
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -123,7 +124,7 @@ func New(binaryPath string, pm *process.ProcessManager) *Service {
 
 // Version returns the yt-dlp version string (used by getEngineInfo).
 func (s *Service) Version(ctx context.Context) (string, error) {
-	out, err := s.runCapture(ctx, "--version")
+	out, _, err := s.runCapture(ctx, "--version")
 	if err != nil {
 		return "", err
 	}
@@ -150,8 +151,6 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 		"--no-playlist",
 		"--no-warnings",
 		"--retries", "5",
-		// android_vr: stable client with full 144p-1080p format access without PO tokens
-		"--extractor-args", "youtube:player_client=android_vr",
 	}
 
 	vid := extractVideoID(url)
@@ -167,7 +166,7 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 	}
 	args = append(args, url)
 
-	out, runErr := s.runCapture(ctx, args...)
+	out, stderrStr, runErr := s.runCapture(ctx, args...)
 
 	if len(out) > 0 {
 		if info, err := parseVideoInfo(out, url); err == nil {
@@ -179,10 +178,11 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 		logging.Error("ytdlp: getVideoInfo failed", map[string]interface{}{
 			"url": url,
 			"err": runErr.Error(),
+			"stderr": stderrStr,
 		})
 		return nil, mapYtdlpError(runErr)
 	}
-	return nil, fmt.Errorf("ytdlp: no output and no error")
+	return nil, fmt.Errorf("ytdlp: no output and no error. stderr: %s", stderrStr)
 }
 
 // GetFormats fetches the full format list (§18 getFormats / FR-41).
@@ -206,15 +206,13 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 		"--no-playlist",
 		"--no-warnings",
 		"--retries", "5",
-		// android_vr: stable client with full 144p-1080p format access without PO tokens
-		"--extractor-args", "youtube:player_client=android_vr",
 	}
 	if cookiePath != "" {
 		args = append(args, "--cookies", cookiePath)
 	}
 	args = append(args, url)
 
-	out, runErr := s.runCapture(ctx, args...)
+	out, stderrStr, runErr := s.runCapture(ctx, args...)
 
 	if len(out) > 0 {
 		// Cache the output for immediate download later
@@ -225,7 +223,7 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 			if len(formats) > 0 {
 				return formats, nil
 			}
-			runErr = fmt.Errorf("YouTube blocked the request or no formats were found (try clearing cookies or wait)")
+			runErr = fmt.Errorf("YouTube blocked the request or no formats were found (try clearing cookies or wait). yt-dlp says: %s", stderrStr)
 		}
 	}
 
@@ -233,10 +231,11 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 		logging.Error("ytdlp: getFormats failed", map[string]interface{}{
 			"videoId": videoID,
 			"err":     runErr.Error(),
+			"stderr":  stderrStr,
 		})
 		return nil, mapYtdlpError(runErr)
 	}
-	return nil, fmt.Errorf("ytdlp: no output and no error")
+	return nil, fmt.Errorf("ytdlp: no output and no error. stderr: %s", stderrStr)
 }
 
 // DownloadOptions configures a yt-dlp download (FR-42).
@@ -529,21 +528,28 @@ func mapYtdlpError(err error) error {
 	}
 }
 
-// runCapture runs yt-dlp and captures stdout. SEC-05: uses exec.Command array form.
-func (s *Service) runCapture(ctx context.Context, args ...string) ([]byte, error) {
-	// Look for deno.exe in the same folder as yt-dlp.exe
-	denoPath := filepath.Join(filepath.Dir(s.binaryPath), "deno.exe")
+// runCapture runs yt-dlp and captures stdout and stderr. SEC-05: uses exec.Command array form.
+func (s *Service) runCapture(ctx context.Context, args ...string) ([]byte, string, error) {
+	denoDir := filepath.Dir(s.binaryPath)
+	denoPath := filepath.Join(denoDir, "deno.exe")
 	if _, err := os.Stat(denoPath); err == nil {
-		args = append([]string{"--js-runtimes", "deno:" + denoPath}, args...)
+		args = append([]string{"--js-runtimes", "deno"}, args...)
 	}
 
 	cmd := exec.CommandContext(ctx, s.binaryPath, args...)
-	out, err := cmd.Output()
-	if err != nil {
-		if ee, ok := err.(*exec.ExitError); ok {
-			return nil, fmt.Errorf("ytdlp: exit %d: %s", ee.ExitCode(), string(ee.Stderr))
-		}
-		return nil, err
+	
+	if _, err := os.Stat(denoPath); err == nil {
+		cmd.Env = append(os.Environ(), "PATH="+denoDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	}
-	return out, nil
+
+	var stderrBuf bytes.Buffer
+	cmd.Stderr = &stderrBuf
+
+	out, err := cmd.Output()
+	stderrStr := stderrBuf.String()
+	
+	if err != nil {
+		return nil, stderrStr, fmt.Errorf("ytdlp: exit: %v, stderr: %s", err, stderrStr)
+	}
+	return out, stderrStr, nil
 }
