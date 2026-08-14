@@ -55,6 +55,7 @@ const TAB_BUTTONS: Array<{ id: TabId; label: string; icon: React.ReactNode; aria
  */
 export function DownloaderControls({ videoId }: DownloaderControlsProps) {
   const [engineReady, setEngineReady] = useState(false);
+  const [engineChecking, setEngineChecking] = useState(true); // suppress Install Engine flash until initial ping done
   const [engineInfo, setEngineInfo] = useState<EngineInfo | null>(null);
   const [githubVersion, setGithubVersion] = useState<string>('v0.2.11');
   const [starsCount, setStarsCount] = useState<number | null>(null);
@@ -114,6 +115,18 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
       }
     }
     fetchGitHubStats();
+
+    // Initial engine ping — done here so we never flash Install Engine before knowing engine state
+    NativeClient.getEngineInfo().then((info) => {
+      if (info?.status === 'Ready') {
+        setEngineReady(true);
+        setEngineInfo(info);
+      }
+    }).catch(() => {
+      // Engine not installed — engineChecking false will show EngineStatusPanel
+    }).finally(() => {
+      setEngineChecking(false);
+    });
 
     if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
       chrome.runtime.sendMessage({ type: 'CHECK_FILE_ACCESS' }, (res) => {
@@ -424,8 +437,13 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
       {/* Body Area */}
       <ErrorBoundary>
         <div>
-          {!engineReady ? (
-            <EngineStatusPanel onReady={(info) => { setEngineReady(true); setEngineInfo(info); }} />
+          {engineChecking ? (
+            // Waiting for initial ping — render nothing to prevent Install Engine flash
+            null
+          ) : !engineReady ? (
+            <EngineStatusPanel
+              onReady={(info) => { setEngineReady(true); setEngineInfo(info); }}
+            />
           ) : (
             <>
               {!fileAccessAllowed && (
