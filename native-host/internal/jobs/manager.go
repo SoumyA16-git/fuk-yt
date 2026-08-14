@@ -239,10 +239,25 @@ func (m *Manager) runDownload(ctx context.Context, jobID, videoID, outputType, q
 func (m *Manager) runClip(ctx context.Context, jobID, videoID string, startSec, endSec float64, outputType, quality, format string, cookies []ytdlp.Cookie) {
 	progressFn := m.makeProgressFn(jobID)
 
-	finalPath, runErr := m.downSvc.DownloadClip(ctx, videoID, startSec, endSec, outputType, quality, format, jobID, progressFn, cookies)
+	var finalPath string
+	var runErr error
 
-	if ctx.Err() != nil {
-		return
+	maxAttempts := 3
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		finalPath, runErr = m.downSvc.DownloadClip(ctx, videoID, startSec, endSec, outputType, quality, format, jobID, progressFn, cookies)
+
+		if ctx.Err() != nil {
+			return
+		}
+
+		if runErr == nil {
+			break
+		}
+
+		if attempt < maxAttempts {
+			logging.Warn("jobs: clip attempt failed, retrying...", map[string]interface{}{"jobId": jobID, "attempt": attempt, "err": runErr.Error()})
+			time.Sleep(2 * time.Second)
+		}
 	}
 
 	m.mu.Lock()
