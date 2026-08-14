@@ -16,20 +16,20 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fukyt/host/internal/deps"
 	"github.com/fukyt/host/internal/download"
 	"github.com/fukyt/host/internal/ffmpeg"
 	"github.com/fukyt/host/internal/files"
 	"github.com/fukyt/host/internal/host"
 	"github.com/fukyt/host/internal/jobs"
 	"github.com/fukyt/host/internal/logging"
-	"github.com/fukyt/host/internal/potmanager"
 	"github.com/fukyt/host/internal/process"
 	"github.com/fukyt/host/internal/router"
 	"github.com/fukyt/host/internal/server"
 	"github.com/fukyt/host/internal/ytdlp"
 )
 
-var Version = "v0.2.16"
+var Version = "v0.2.17"
 
 type Config struct {
 	InstallDir   string
@@ -37,7 +37,6 @@ type Config struct {
 	YtDlpPath    string
 	FFmpegPath   string
 	FFprobePath  string
-	BgutilPath   string
 	LogDir       string
 	TempDir      string
 }
@@ -62,6 +61,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "fuk-yt: logger init error: %v\n", err)
 		// Non-fatal: continue without file logging
 	}
+
+	// Auto-download missing dependencies (yt-dlp, ffmpeg, deno)
+	// This ensures seamless OTA updates without needing install.bat
+	deps.Ensure(cfg.InstallDir)
 
 	if *healthCheck {
 		os.Exit(runHealthCheck(cfg))
@@ -118,7 +121,6 @@ func loadConfig() (*Config, error) {
 		YtDlpPath:   findBinary(installDir, "yt-dlp"+binExt),
 		FFmpegPath:  findBinary(installDir, "ffmpeg"+binExt),
 		FFprobePath: findBinary(installDir, "ffprobe"+binExt),
-		BgutilPath:  findBinary(installDir, "bgutil-pot-windows-x86_64"+binExt),
 		LogDir:      filepath.Join(appDir, "logs"),
 		TempDir:     filepath.Join(appDir, "temp"),
 	}, nil
@@ -194,20 +196,6 @@ func findBinary(installDir, binName string) string {
 	return p1 // fallback
 }
 
-// findPluginsDir locates the yt-dlp plugins directory relative to installDir.
-func findPluginsDir(installDir string) string {
-	candidates := []string{
-		filepath.Join(installDir, "bin", "yt-dlp-plugins"),
-		filepath.Join(installDir, "yt-dlp-plugins"),
-	}
-	for _, c := range candidates {
-		if info, err := os.Stat(c); err == nil && info.IsDir() {
-			return c
-		}
-	}
-	return ""
-}
-
 func run(cfg *Config) error {
 	logging.Info("FUK-YT native host starting", map[string]interface{}{"version": Version})
 
@@ -247,13 +235,9 @@ func run(cfg *Config) error {
 		_ = os.RemoveAll(stagingDir)
 	}
 
-	ytdlpPluginsDir := findPluginsDir(cfg.InstallDir)
-	ytSvc := ytdlp.NewWithPlugins(cfg.YtDlpPath, ytdlpPluginsDir, pm)
+	ytSvc := ytdlp.New(cfg.YtDlpPath, pm)
 	ffSvc := ffmpeg.New(cfg.FFmpegPath, cfg.FFprobePath, pm)
 	dlSvc := download.New(ytSvc, ffSvc, fm)
-
-	// Start PO Token provider server for high-quality format downloads
-	go potmanager.EnsureRunning(cfg.InstallDir)
 
 	h := host.New()
 
@@ -294,7 +278,6 @@ func run(cfg *Config) error {
 			if err == io.EOF {
 				logging.Info("host: Chrome disconnected (EOF)")
 				pm.KillAll()
-				potmanager.Stop()
 				return nil
 			}
 			logging.Warn("host: read error", map[string]interface{}{"err": err.Error()})

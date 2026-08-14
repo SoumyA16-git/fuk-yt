@@ -56,33 +56,15 @@ if not exist "%TOOLS_DIR%\ffmpeg.exe" (
 
 :: 5. Download Deno (JS Runtime for yt-dlp)
 if not exist "%TOOLS_DIR%\deno.exe" (
-    echo [3/6] Downloading Deno JS Engine for yt-dlp...
+    echo [3/4] Downloading Deno JS Engine for yt-dlp...
     powershell -Command "$ErrorActionPreference = 'Stop'; Invoke-WebRequest -Uri 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip' -OutFile '%TOOLS_DIR%\deno.zip' ; Write-Host 'Extracting...'; Expand-Archive -Path '%TOOLS_DIR%\deno.zip' -DestinationPath '%TOOLS_DIR%\deno_extracted' -Force ; Move-Item -Path '%TOOLS_DIR%\deno_extracted\deno.exe' -Destination '%TOOLS_DIR%\' -Force ; Remove-Item '%TOOLS_DIR%\deno.zip' ; Remove-Item '%TOOLS_DIR%\deno_extracted' -Recurse -Force"
     echo  - Deno downloaded!
 ) else (
-    echo [3/6] Deno already installed.
+    echo [3/4] Deno already installed.
 )
 
-:: 6. Download bgutil PO Token Provider (enables 1080p downloads)
-if not exist "%TOOLS_DIR%\bgutil-pot-windows-x86_64.exe" (
-    echo [4/6] Downloading PO Token Provider for 1080p support...
-    powershell -Command "$ErrorActionPreference = 'Stop'; Invoke-WebRequest -Uri 'https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-pot-windows-x86_64.exe' -OutFile '%TOOLS_DIR%\bgutil-pot-windows-x86_64.exe'"
-    echo  - PO Token Provider downloaded!
-) else (
-    echo [4/6] PO Token Provider already installed.
-)
-
-:: 7. Download yt-dlp PO Token plugin files
-if not exist "%TOOLS_DIR%\yt-dlp-plugins\yt_dlp_plugins\extractor\getpot_bgutil_http.py" (
-    echo [5/6] Downloading yt-dlp PO Token plugin...
-    powershell -Command "$ErrorActionPreference = 'Stop'; Invoke-WebRequest -Uri 'https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-ytdlp-pot-provider-rs.zip' -OutFile '%TOOLS_DIR%\pot-plugin.zip' ; Expand-Archive -Path '%TOOLS_DIR%\pot-plugin.zip' -DestinationPath '%TOOLS_DIR%\yt-dlp-plugins' -Force ; Remove-Item '%TOOLS_DIR%\pot-plugin.zip'"
-    echo  - yt-dlp PO Token plugin installed!
-) else (
-    echo [5/6] yt-dlp PO Token plugin already installed.
-)
-
-:: 8. Create Manifest File
-echo [6/6] Registering Chrome Native Host...
+:: 6. Create Manifest File
+echo [4/4] Registering Chrome Native Host...
 set "ESCAPED_HOST_PATH=%NATIVE_EXE:\=\\%"
 
 (
