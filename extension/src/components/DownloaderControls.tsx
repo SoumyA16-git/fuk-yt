@@ -438,42 +438,26 @@ export function DownloaderControls({ videoId }: DownloaderControlsProps) {
             </span>
           </div>
 
-          {/* High Quality App Icon Pill Badge */}
-          <div
+          {/* High Quality App Icon */}
+          <img
+            src={typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL('ICON.png') : 'ICON.png'}
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+                target.src = chrome.runtime.getURL('icons/icon128.png');
+              }
+            }}
+            alt="FUK-YT"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
               height: 32,
-              padding: '0 8px',
-              borderRadius: 16,
-              background: theme.cardSubtleBg,
-              border: `1px solid ${theme.cardSubtleBorder}`,
-              transition: theme.transition,
+              width: 'auto',
+              objectFit: 'contain',
+              display: 'block',
               flexShrink: 0,
-              boxSizing: 'border-box',
+              marginLeft: 4,
             }}
             title="FUK-YT"
-          >
-            <img
-              src={typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL('ICON.png') : 'ICON.png'}
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
-                  target.src = chrome.runtime.getURL('icons/icon128.png');
-                }
-              }}
-              alt="FUK-YT"
-              style={{
-                height: 20,
-                width: 'auto',
-                maxHeight: 20,
-                maxWidth: 60,
-                objectFit: 'contain',
-                display: 'block',
-              }}
-            />
-          </div>
+          />
         </div>
       </div>
 

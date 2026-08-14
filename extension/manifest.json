@@ -13,7 +13,8 @@
   ],
   "host_permissions": [
     "https://www.youtube.com/*",
-    "https://youtube.com/*"
+    "https://youtube.com/*",
+    "*://*.youtube.com/*"
   ],
   "background": {
     "service_worker": "src/background/index.js",

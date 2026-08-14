@@ -267,27 +267,42 @@ func (s *Service) Download(
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	scanStream := func(r io.Reader) {
+	var lastErrorLine string
+	var errMu sync.Mutex
+
+	scanStream := func(r io.Reader, isStderr bool) {
 		defer wg.Done()
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
 			line := scanner.Text()
 			if evt, ok := parseProgressLine(line, jobID); ok {
 				progressFn(evt)
+			} else if isStderr && strings.Contains(strings.ToLower(line), "error") {
+				errMu.Lock()
+				lastErrorLine = line
+				errMu.Unlock()
+				logging.Warn("ytdlp stderr", map[string]interface{}{"jobId": jobID, "line": line})
 			}
 		}
 	}
 
-	go scanStream(stdout)
-	go scanStream(stderr)
+	go scanStream(stdout, false)
+	go scanStream(stderr, true)
 
 	wg.Wait()
 
 	if err := cmd.Wait(); err != nil {
+		errMu.Lock()
+		errMsg := err.Error()
+		if lastErrorLine != "" {
+			errMsg = lastErrorLine
+		}
+		errMu.Unlock()
+
 		logging.Error("ytdlp: download failed", map[string]interface{}{
-			"jobId": jobID, "err": err.Error(),
+			"jobId": jobID, "err": errMsg,
 		})
-		return mapYtdlpError(err)
+		return mapYtdlpError(fmt.Errorf("%s: %s", err.Error(), errMsg))
 	}
 
 	logging.Info("ytdlp: download complete", map[string]interface{}{"jobId": jobID})
