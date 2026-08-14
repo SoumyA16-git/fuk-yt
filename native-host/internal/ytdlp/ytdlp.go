@@ -126,7 +126,7 @@ func (s *Service) GetVideoInfo(ctx context.Context, url string, cookies []Cookie
 	}
 	defer cleanup()
 
-	args := []string{"--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
+	args := []string{"--ignore-config", "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
 	if cookiePath != "" {
 		args = append(args, "--cookies", cookiePath)
 	}
@@ -164,7 +164,7 @@ func (s *Service) GetFormats(ctx context.Context, videoID string, cookies []Cook
 	}
 	defer cleanup()
 
-	args := []string{"--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
+	args := []string{"--ignore-config", "--dump-json", "--no-playlist", "--no-warnings", "--retries", "5"}
 	if cookiePath != "" {
 		args = append(args, "--cookies", cookiePath)
 	}
