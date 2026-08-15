@@ -155,14 +155,16 @@ function injectShortsButton(actionsContainer: Element, renderer: Element) {
 
   const wrapper = document.createElement('div');
   wrapper.className = 'fuk-yt-shorts-btn-wrapper';
-  // Standard styling for YouTube Shorts action bar items
-  wrapper.style.width = '100%';
-  wrapper.style.minHeight = '48px';
-  wrapper.style.margin = '16px 0'; // Match spacing between buttons
-  wrapper.style.display = 'flex';
-  wrapper.style.justifyContent = 'center';
-  wrapper.style.alignItems = 'center';
-  wrapper.style.zIndex = '9999';
+  // Use cssText with !important to override any YouTube CSS that might hide non-native elements
+  wrapper.style.cssText = `
+    width: 100% !important;
+    min-height: 48px !important;
+    margin: 16px 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9999 !important;
+  `;
   
   // Try to insert above the Like button, otherwise at the top of actions
   const likeButton = actionsContainer.querySelector('#like-button') || actionsContainer.querySelector('ytd-toggle-button-renderer');
