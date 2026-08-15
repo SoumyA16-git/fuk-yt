@@ -147,32 +147,41 @@ function unmountControls() {
 // Shorts Button Injection
 // ============================================================
 
-function injectShortsButton(overlay: Element, renderer: Element) {
+function injectShortsButton(actionsContainer: Element, renderer: Element) {
   // Prevent double injection
-  if (overlay.querySelector('.fuk-yt-shorts-btn-wrapper')) {
+  if (actionsContainer.querySelector('.fuk-yt-shorts-btn-wrapper')) {
     return;
   }
 
   const wrapper = document.createElement('div');
-  wrapper.className = 'fuk-yt-shorts-btn-wrapper';
-  // Use absolute positioning relative to the overlay (which covers the video perfectly)
-  // This completely bypasses any CSS flex-column hiding tricks YouTube uses on #actions
+  wrapper.className = 'fuk-yt-shorts-btn-wrapper style-scope ytd-reel-player-overlay-renderer';
+  // Use bulletproof CSS to ensure YouTube cannot hide this div
   wrapper.style.cssText = `
-    position: absolute !important;
-    right: 12px !important;
-    bottom: 400px !important; /* Roughly above the Like button */
     width: 48px !important;
     height: 48px !important;
+    min-height: 48px !important;
+    margin: 16px 0 !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
+    visibility: visible !important;
+    opacity: 1 !important;
     z-index: 99999 !important;
     pointer-events: auto !important;
+    position: relative !important;
+    transform: none !important;
+    clip-path: none !important;
   `;
   
-  overlay.appendChild(wrapper);
+  // Try to insert above the Like button
+  const likeButton = actionsContainer.querySelector('#like-button') || actionsContainer.querySelector('ytd-toggle-button-renderer');
+  if (likeButton) {
+    actionsContainer.insertBefore(wrapper, likeButton);
+  } else {
+    actionsContainer.appendChild(wrapper);
+  }
   
-  console.log('[FUK-YT] Injected Shorts Download Button directly into overlay:', overlay);
+  console.log('[FUK-YT] Injected Shorts Download Button directly into actions container:', actionsContainer);
   
   const root = createRoot(wrapper);
   root.render(
@@ -194,10 +203,18 @@ function scanAndInjectShorts() {
   const renderers = document.querySelectorAll('ytd-reel-video-renderer');
   
   renderers.forEach((renderer) => {
-    // Find the overlay which contains the video controls and spans exactly the video frame
-    const overlay = renderer.querySelector('ytd-reel-player-overlay-renderer');
-    if (overlay) {
-      injectShortsButton(overlay, renderer);
+    // The most reliable anchor is the Like button itself.
+    const likeButton = renderer.querySelector('#like-button') || renderer.querySelector('ytd-toggle-button-renderer');
+    
+    if (likeButton && likeButton.parentElement) {
+      const actionsContainer = likeButton.parentElement;
+      injectShortsButton(actionsContainer, renderer);
+    } else {
+      // Fallback if like button isn't found yet
+      const actions = renderer.querySelector('#actions');
+      if (actions) {
+        injectShortsButton(actions, renderer);
+      }
     }
   });
 }

@@ -96,7 +96,9 @@ export const NativeClient = {
 
   /** §18 startDownload — returns jobId */
   async startDownload(req: DownloadRequest): Promise<string> {
-    const cookies = await getYoutubeCookies();
+    // For Shorts, downloading with cookies often triggers 403 Forbidden on the 1080p stream
+    // due to PoToken restrictions on authenticated accounts. So we omit them for Shorts.
+    const cookies = req.isShort ? [] : await getYoutubeCookies();
     const payload = { ...req, cookies } as unknown as Record<string, unknown>;
     const res = await sendNative<{ jobId: string }>('startDownload', payload);
     return res.jobId;
