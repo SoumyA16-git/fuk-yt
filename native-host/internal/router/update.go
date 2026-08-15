@@ -62,6 +62,10 @@ echo [1/5] Closing browsers...
 taskkill /F /IM chrome.exe > NUL 2>&1
 taskkill /F /IM msedge.exe > NUL 2>&1
 taskkill /F /IM brave.exe > NUL 2>&1
+taskkill /F /IM opera.exe > NUL 2>&1
+taskkill /F /IM vivaldi.exe > NUL 2>&1
+taskkill /F /IM Arc.exe > NUL 2>&1
+taskkill /F /IM thorium.exe > NUL 2>&1
 
 :: 3. Download updates
 echo [2/5] Downloading Native Engine %s...
