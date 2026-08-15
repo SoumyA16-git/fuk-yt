@@ -55,7 +55,7 @@ echo Please wait, update in progress...
 echo.
 
 :: 1. Wait for native-host to exit so files unlock
-timeout /t 2 /nobreak > NUL
+ping 127.0.0.1 -n 3 > NUL
 
 :: 2. Force close browsers
 echo [1/5] Closing browsers...
@@ -140,11 +140,18 @@ del "%%~f0" & exit
 		logging.Warn("updater: failed to send response to extension: " + err.Error())
 	}
 
-	// Start updater.bat using explorer.exe to completely escape Chrome's Job Object
-	logging.Info("updater: launching updater.bat via explorer", nil)
-	cmd := exec.Command("explorer.exe", updaterBatPath)
+	// Start updater.bat using WMI to completely escape Chrome's Job Object so it survives taskkill
+	logging.Info("updater: launching updater.bat via WMI", nil)
+	wmiCmd := fmt.Sprintf(`Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'cmd.exe /c start "FUK-YT Updater" "%s"'`, updaterBatPath)
+	cmd := exec.Command("powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", wmiCmd)
 
 	err = cmd.Start()
+	if err != nil {
+		logging.Warn("updater: WMI launch failed, falling back to explorer: " + err.Error())
+		cmd = exec.Command("explorer.exe", updaterBatPath)
+		err = cmd.Start()
+	}
+
 	if err != nil {
 		_ = os.Remove(updaterBatPath)
 		return r.h.SendError(msg.RequestID, "UPDATER_LAUNCH_FAILED", "Failed to start updater script: "+err.Error())
