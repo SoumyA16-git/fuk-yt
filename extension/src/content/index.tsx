@@ -155,9 +155,21 @@ function injectShortsButton(actionsContainer: Element, renderer: Element) {
 
   const wrapper = document.createElement('div');
   wrapper.className = 'fuk-yt-shorts-btn-wrapper';
+  wrapper.style.zIndex = '9999';
+  wrapper.style.position = 'relative';
+  wrapper.style.pointerEvents = 'auto';
+  wrapper.style.display = 'flex';
+  wrapper.style.justifyContent = 'center';
   
-  // The native buttons are usually inside #actions, we insert at the top (above Like)
-  actionsContainer.insertBefore(wrapper, actionsContainer.firstChild);
+  // Try to insert above the Like button, otherwise at the top of actions
+  const likeButton = actionsContainer.querySelector('#like-button') || actionsContainer.querySelector('ytd-toggle-button-renderer');
+  if (likeButton) {
+    actionsContainer.insertBefore(wrapper, likeButton);
+  } else {
+    actionsContainer.insertBefore(wrapper, actionsContainer.firstChild);
+  }
+  
+  console.log('[FUK-YT] Injected Shorts Download Button into', actionsContainer);
   
   const root = createRoot(wrapper);
   root.render(
