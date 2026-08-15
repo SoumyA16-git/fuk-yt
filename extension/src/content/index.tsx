@@ -173,12 +173,12 @@ function injectShortsButton(actionsContainer: Element, renderer: Element) {
     clip-path: none !important;
   `;
   
-  // Try to insert above the Like button
-  const likeButton = actionsContainer.querySelector('#like-button') || actionsContainer.querySelector('ytd-toggle-button-renderer');
-  if (likeButton) {
-    actionsContainer.insertBefore(wrapper, likeButton);
+  // Try to insert above the Like button renderer
+  const likeButtonRenderer = actionsContainer.querySelector('ytd-like-button-renderer');
+  if (likeButtonRenderer) {
+    actionsContainer.insertBefore(wrapper, likeButtonRenderer);
   } else {
-    actionsContainer.appendChild(wrapper);
+    actionsContainer.insertBefore(wrapper, actionsContainer.firstChild);
   }
   
   console.log('[FUK-YT] Injected Shorts Download Button directly into actions container:', actionsContainer);
@@ -203,18 +203,10 @@ function scanAndInjectShorts() {
   const renderers = document.querySelectorAll('ytd-reel-video-renderer');
   
   renderers.forEach((renderer) => {
-    // The most reliable anchor is the Like button itself.
-    const likeButton = renderer.querySelector('#like-button') || renderer.querySelector('ytd-toggle-button-renderer');
-    
-    if (likeButton && likeButton.parentElement) {
-      const actionsContainer = likeButton.parentElement;
+    // The actual container for the buttons is the #actions div.
+    const actionsContainer = renderer.querySelector('#actions');
+    if (actionsContainer) {
       injectShortsButton(actionsContainer, renderer);
-    } else {
-      // Fallback if like button isn't found yet
-      const actions = renderer.querySelector('#actions');
-      if (actions) {
-        injectShortsButton(actions, renderer);
-      }
     }
   });
 }
