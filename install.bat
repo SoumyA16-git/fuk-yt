@@ -42,7 +42,8 @@ if not exist "%TOOLS_DIR%\yt-dlp.exe" (
     powershell -Command "$ErrorActionPreference = 'Stop'; Invoke-WebRequest -Uri 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' -OutFile '%TOOLS_DIR%\yt-dlp.exe'"
     echo  - yt-dlp downloaded!
 ) else (
-    echo [1/4] yt-dlp already installed.
+    echo [1/4] yt-dlp already installed. Checking for updates...
+    "%TOOLS_DIR%\yt-dlp.exe" -U
 )
 
 :: 4. Download FFmpeg
@@ -60,7 +61,8 @@ if not exist "%TOOLS_DIR%\deno.exe" (
     powershell -Command "$ErrorActionPreference = 'Stop'; Invoke-WebRequest -Uri 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip' -OutFile '%TOOLS_DIR%\deno.zip' ; Write-Host 'Extracting...'; Expand-Archive -Path '%TOOLS_DIR%\deno.zip' -DestinationPath '%TOOLS_DIR%\deno_extracted' -Force ; Move-Item -Path '%TOOLS_DIR%\deno_extracted\deno.exe' -Destination '%TOOLS_DIR%\' -Force ; Remove-Item '%TOOLS_DIR%\deno.zip' ; Remove-Item '%TOOLS_DIR%\deno_extracted' -Recurse -Force"
     echo  - Deno downloaded!
 ) else (
-    echo [3/4] Deno already installed.
+    echo [3/4] Deno already installed. Checking for updates...
+    "%TOOLS_DIR%\deno.exe" upgrade
 )
 
 :: 6. Create Manifest File
