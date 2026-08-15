@@ -71,7 +71,7 @@ async function mountControls(url: string) {
   const anchor = await waitForAnchor(10_000);
   if (!anchor) {
     // NFR-14: anchor not found, controls hidden; YouTube unaffected
-    console.warn('[FUK-YT] Injection anchor not found; controls hidden');
+    console.log('[FUK-YT] Injection anchor not found; big controls hidden (expected on Shorts)');
     return;
   }
 
@@ -189,10 +189,21 @@ function scanAndInjectShorts() {
   if (!isShortsPage(window.location.href)) return;
 
   const renderers = document.querySelectorAll('ytd-reel-video-renderer');
+  
   renderers.forEach((renderer) => {
-    const actions = renderer.querySelector('#actions');
-    if (actions) {
-      injectShortsButton(actions, renderer);
+    // Some versions of YT use #actions, some use different classes.
+    // The most reliable anchor is the Like button itself.
+    const likeButton = renderer.querySelector('#like-button') || renderer.querySelector('ytd-toggle-button-renderer');
+    
+    if (likeButton && likeButton.parentElement) {
+      const actionsContainer = likeButton.parentElement;
+      injectShortsButton(actionsContainer, renderer);
+    } else {
+      // Fallback if like button isn't found yet
+      const actions = renderer.querySelector('#actions');
+      if (actions) {
+        injectShortsButton(actions, renderer);
+      }
     }
   });
 }
