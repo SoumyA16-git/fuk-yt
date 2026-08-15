@@ -147,34 +147,32 @@ function unmountControls() {
 // Shorts Button Injection
 // ============================================================
 
-function injectShortsButton(actionsContainer: Element, renderer: Element) {
+function injectShortsButton(overlay: Element, renderer: Element) {
   // Prevent double injection
-  if (actionsContainer.querySelector('.fuk-yt-shorts-btn-wrapper')) {
+  if (overlay.querySelector('.fuk-yt-shorts-btn-wrapper')) {
     return;
   }
 
   const wrapper = document.createElement('div');
   wrapper.className = 'fuk-yt-shorts-btn-wrapper';
-  // Use cssText with !important to override any YouTube CSS that might hide non-native elements
+  // Use absolute positioning relative to the overlay (which covers the video perfectly)
+  // This completely bypasses any CSS flex-column hiding tricks YouTube uses on #actions
   wrapper.style.cssText = `
-    width: 100% !important;
-    min-height: 48px !important;
-    margin: 16px 0 !important;
+    position: absolute !important;
+    right: 12px !important;
+    bottom: 400px !important; /* Roughly above the Like button */
+    width: 48px !important;
+    height: 48px !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    z-index: 9999 !important;
+    z-index: 99999 !important;
+    pointer-events: auto !important;
   `;
   
-  // Try to insert above the Like button, otherwise at the top of actions
-  const likeButton = actionsContainer.querySelector('#like-button') || actionsContainer.querySelector('ytd-toggle-button-renderer');
-  if (likeButton) {
-    actionsContainer.insertBefore(wrapper, likeButton);
-  } else {
-    actionsContainer.insertBefore(wrapper, actionsContainer.firstChild);
-  }
+  overlay.appendChild(wrapper);
   
-  console.log('[FUK-YT] Injected Shorts Download Button into', actionsContainer);
+  console.log('[FUK-YT] Injected Shorts Download Button directly into overlay:', overlay);
   
   const root = createRoot(wrapper);
   root.render(
@@ -196,19 +194,10 @@ function scanAndInjectShorts() {
   const renderers = document.querySelectorAll('ytd-reel-video-renderer');
   
   renderers.forEach((renderer) => {
-    // Some versions of YT use #actions, some use different classes.
-    // The most reliable anchor is the Like button itself.
-    const likeButton = renderer.querySelector('#like-button') || renderer.querySelector('ytd-toggle-button-renderer');
-    
-    if (likeButton && likeButton.parentElement) {
-      const actionsContainer = likeButton.parentElement;
-      injectShortsButton(actionsContainer, renderer);
-    } else {
-      // Fallback if like button isn't found yet
-      const actions = renderer.querySelector('#actions');
-      if (actions) {
-        injectShortsButton(actions, renderer);
-      }
+    // Find the overlay which contains the video controls and spans exactly the video frame
+    const overlay = renderer.querySelector('ytd-reel-player-overlay-renderer');
+    if (overlay) {
+      injectShortsButton(overlay, renderer);
     }
   });
 }
