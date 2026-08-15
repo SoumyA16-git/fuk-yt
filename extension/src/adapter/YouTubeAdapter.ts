@@ -105,6 +105,9 @@ export function extractVideoMetadata(videoId: string): VideoMetadataDom | null {
  * Returns null if not found — caller must handle graceful hide (NFR-14).
  */
 export function findControlBarAnchor(): Element | null {
+  if (isShortsPage(window.location.href)) {
+    return null; // Do not inject the big DownloaderControls bar on Shorts pages
+  }
   // 1. Modern YouTube Watch Page: #above-the-fold inside #primary-inner
   const aboveFold = document.querySelector('#primary-inner #above-the-fold, #above-the-fold');
   if (aboveFold && aboveFold.isConnected && !aboveFold.hasAttribute('hidden')) {
@@ -119,9 +122,9 @@ export function findControlBarAnchor(): Element | null {
   const primaryInner = document.querySelector('#primary-inner');
   if (primaryInner && primaryInner.isConnected) return primaryInner;
 
-  // 4. Shorts
-  const shorts = document.querySelector('ytd-shorts');
-  if (shorts) return shorts;
+  // 4. Shorts (disabled for the big bar, handled by watchShortsActions instead)
+  // const shorts = document.querySelector('ytd-shorts');
+  // if (shorts) return shorts;
 
   return null;
 }
@@ -149,6 +152,54 @@ export function waitForAnchor(maxMs = 10_000): Promise<Element | null> {
     obs.observe(document.documentElement, { childList: true, subtree: true });
     setTimeout(() => { obs.disconnect(); resolve(findControlBarAnchor()); }, maxMs);
   });
+}
+
+// ============================================================
+// Shorts Feed Action Bar Observer
+// ============================================================
+
+/**
+ * Observes the DOM for newly added Shorts (#actions inside ytd-reel-video-renderer).
+ * Calls onActionsFound(actionsContainer, videoRenderer) when a new one is discovered.
+ */
+export function watchShortsActions(
+  onActionsFound: (actionsContainer: Element, renderer: Element) => void
+): () => void {
+  // Find already rendered ones
+  const existingRenderers = document.querySelectorAll('ytd-reel-video-renderer');
+  existingRenderers.forEach((renderer) => {
+    const actions = renderer.querySelector('#actions');
+    if (actions) onActionsFound(actions, renderer);
+  });
+
+  const obs = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node instanceof HTMLElement) {
+          // Check if the added node is the renderer itself
+          if (node.tagName.toLowerCase() === 'ytd-reel-video-renderer') {
+            const actions = node.querySelector('#actions');
+            if (actions) onActionsFound(actions, node);
+          } 
+          // Check if the added node contains the renderer or actions
+          else if (node.querySelectorAll) {
+            const renderers = node.querySelectorAll('ytd-reel-video-renderer');
+            renderers.forEach((renderer) => {
+              const actions = renderer.querySelector('#actions');
+              if (actions) onActionsFound(actions, renderer);
+            });
+            // Sometimes just #actions is added dynamically inside an existing renderer
+            if (node.id === 'actions' && node.closest('ytd-reel-video-renderer')) {
+              onActionsFound(node, node.closest('ytd-reel-video-renderer')!);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+  return () => obs.disconnect();
 }
 
 // ============================================================

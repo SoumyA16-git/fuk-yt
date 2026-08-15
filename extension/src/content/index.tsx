@@ -12,11 +12,14 @@ import { createRoot } from 'react-dom/client';
 import { DownloaderControls } from '@/components/DownloaderControls';
 import {
   isWatchPage,
+  isShortsPage,
   extractVideoId,
   extractVideoMetadata,
   waitForAnchor,
   watchNavigation,
+  watchShortsActions,
 } from '@/adapter/YouTubeAdapter';
+import { ShortsDownloadButton } from '@/components/ShortsDownloadButton';
 
 // ============================================================
 // State
@@ -141,11 +144,58 @@ function unmountControls() {
 }
 
 // ============================================================
+// Shorts Button Injection
+// ============================================================
+
+let cleanupShorts: (() => void) | null = null;
+
+function handleShortsInjection(url: string) {
+  if (cleanupShorts) {
+    cleanupShorts();
+    cleanupShorts = null;
+  }
+  
+  if (!isShortsPage(url)) {
+    return;
+  }
+
+  cleanupShorts = watchShortsActions((actionsContainer, renderer) => {
+    // Prevent double injection
+    if (actionsContainer.querySelector('.fuk-yt-shorts-btn-wrapper')) {
+      return;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'fuk-yt-shorts-btn-wrapper';
+    
+    // The native buttons are usually inside #actions, we insert at the top (above Like)
+    actionsContainer.insertBefore(wrapper, actionsContainer.firstChild);
+    
+    const root = createRoot(wrapper);
+    root.render(
+      <ShortsDownloadButton 
+        videoIdResolver={() => {
+          // Fallback to URL if we can't get it from the renderer
+          // Usually when a user clicks the button on a Short, it is the active one in the URL.
+          const urlVid = extractVideoId(window.location.href);
+          if (urlVid) return urlVid;
+
+          // Try to get it from the renderer's internal data (often bound to DOM)
+          const rendererVid = renderer.getAttribute('data-video-id') || renderer.id;
+          return rendererVid || null;
+        }} 
+      />
+    );
+  });
+}
+
+// ============================================================
 // SPA navigation watcher (FR-04/07)
 // ============================================================
 
 cleanupNavigation = watchNavigation((newUrl) => {
   mountControls(newUrl);
+  handleShortsInjection(newUrl);
 });
 
 // ============================================================
@@ -177,9 +227,13 @@ chrome.runtime.onMessage.addListener((message: Record<string, unknown>) => {
 // ============================================================
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => mountControls(window.location.href));
+  document.addEventListener('DOMContentLoaded', () => {
+    mountControls(window.location.href);
+    handleShortsInjection(window.location.href);
+  });
 } else {
   mountControls(window.location.href);
+  handleShortsInjection(window.location.href);
 }
 
 // Fail-safe persistence loop: Every 500ms, check if we're on a watch page and if our container
