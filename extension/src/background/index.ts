@@ -6,7 +6,7 @@
  * - Reconnects with exponential backoff on disconnect (NFR-10)
  */
 
-import type { NativeEnvelope, NativeResponse, SWResponse } from '@/types';
+import type { NativeEnvelope, NativeResponse, SWResponse, DownloadRequest } from '@/types';
 
 const NATIVE_HOST_ID = 'com.fukyt.host';
 const RECONNECT_MAX_DELAY_MS = 30_000;
@@ -154,6 +154,22 @@ chrome.runtime.onMessage.addListener(
   }
 );
 
+async function getYouTubeCookies() {
+  return new Promise((resolve, reject) => {
+    if (!chrome.cookies) {
+      resolve([]);
+      return;
+    }
+    chrome.cookies.getAll({ domain: '.youtube.com' }, (cookies) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        resolve(cookies);
+      }
+    });
+  });
+}
+
 async function handleMessage(message: { type: string; payload?: unknown }): Promise<unknown> {
   const { type, payload } = message;
 
@@ -164,6 +180,20 @@ async function handleMessage(message: { type: string; payload?: unknown }): Prom
       if (envelope.type === 'triggerUpdate') {
         await chrome.storage.local.set({ isUpdating: true });
       }
+      
+      if (envelope.type === 'api-download') {
+        const req = envelope.payload as unknown as DownloadRequest;
+        
+        // Inject cookies for age-restricted / premium content
+        // However, for Shorts, cookies often cause 403 Forbidden on 1080p streams due to PoToken restrictions.
+        // So we omit cookies if it's a Short.
+        const cookies = req.isShort ? [] : await getYouTubeCookies();
+        envelope.payload = {
+          ...req,
+          cookies
+        };
+      }
+
       const response = await sendNative(envelope);
       // Return the payload from the envelope response
       return response.payload ?? response;

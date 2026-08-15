@@ -147,27 +147,32 @@ function unmountControls() {
 // Shorts Button Injection
 // ============================================================
 
-function injectShortsButton(renderer: Element) {
+function injectShortsButton(actionsContainer: Element, renderer: Element) {
   // Prevent double injection
-  if (renderer.querySelector('.fuk-yt-shorts-btn-wrapper')) {
+  if (actionsContainer.querySelector('.fuk-yt-shorts-btn-wrapper')) {
     return;
   }
 
   const wrapper = document.createElement('div');
   wrapper.className = 'fuk-yt-shorts-btn-wrapper';
-  // Use absolute positioning relative to the renderer
-  wrapper.style.position = 'absolute';
-  wrapper.style.right = '12px'; // Standard distance for Shorts action bar
-  wrapper.style.bottom = '400px'; // roughly above the Like button
-  wrapper.style.zIndex = '9999';
-  wrapper.style.pointerEvents = 'auto';
+  // Standard styling for YouTube Shorts action bar items
+  wrapper.style.width = '100%';
+  wrapper.style.minHeight = '48px';
+  wrapper.style.margin = '16px 0'; // Match spacing between buttons
   wrapper.style.display = 'flex';
   wrapper.style.justifyContent = 'center';
+  wrapper.style.alignItems = 'center';
+  wrapper.style.zIndex = '9999';
   
-  // Directly append to the renderer itself
-  renderer.appendChild(wrapper);
+  // Try to insert above the Like button, otherwise at the top of actions
+  const likeButton = actionsContainer.querySelector('#like-button') || actionsContainer.querySelector('ytd-toggle-button-renderer');
+  if (likeButton) {
+    actionsContainer.insertBefore(wrapper, likeButton);
+  } else {
+    actionsContainer.insertBefore(wrapper, actionsContainer.firstChild);
+  }
   
-  console.log('[FUK-YT] Injected Shorts Download Button directly into renderer:', renderer);
+  console.log('[FUK-YT] Injected Shorts Download Button into', actionsContainer);
   
   const root = createRoot(wrapper);
   root.render(
@@ -189,9 +194,20 @@ function scanAndInjectShorts() {
   const renderers = document.querySelectorAll('ytd-reel-video-renderer');
   
   renderers.forEach((renderer) => {
-    // Only inject if it's the active renderer or if we just want it on all of them
-    // Let's just inject into all of them.
-    injectShortsButton(renderer);
+    // Some versions of YT use #actions, some use different classes.
+    // The most reliable anchor is the Like button itself.
+    const likeButton = renderer.querySelector('#like-button') || renderer.querySelector('ytd-toggle-button-renderer');
+    
+    if (likeButton && likeButton.parentElement) {
+      const actionsContainer = likeButton.parentElement;
+      injectShortsButton(actionsContainer, renderer);
+    } else {
+      // Fallback if like button isn't found yet
+      const actions = renderer.querySelector('#actions');
+      if (actions) {
+        injectShortsButton(actions, renderer);
+      }
+    }
   });
 }
 

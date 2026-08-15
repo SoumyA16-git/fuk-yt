@@ -52,7 +52,8 @@ export function ShortsDownloadButton({ videoIdResolver }: ShortsDownloadButtonPr
         videoId: vid,
         outputType: 'video',
         quality: '1080p',
-        format: 'mp4'
+        format: 'mp4',
+        isShort: true
       });
       setJobId(newJobId);
     } catch (err) {

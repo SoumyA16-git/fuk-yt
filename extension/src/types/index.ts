@@ -49,6 +49,7 @@ export interface DownloadRequest {
   outputType: OutputType;
   quality: string;   // e.g. "best", "1080p", "720p", "480p", "360p"
   format: string;    // e.g. "mp4", "mkv", "mp3", "m4a", "opus"
+  isShort?: boolean;
 }
 
 export interface ClipRequest {

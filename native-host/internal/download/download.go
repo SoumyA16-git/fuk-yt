@@ -394,13 +394,13 @@ func formatAudioTag(q string) string {
 func buildVideoFormatStr(quality, format string) string {
 	switch quality {
 	case "best", "":
-		return "bestvideo[height<=1080][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[height<=1080][vcodec^=h264]+bestaudio/bestvideo[height<=1080]+bestaudio/best[height<=1080]"
+		return "bestvideo[res<=1080][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[res<=1080][vcodec^=h264]+bestaudio/bestvideo[res<=1080]+bestaudio/best[res<=1080]"
 	default:
 		// Strip trailing 'p' or 'p60': "1080p60" → 1080, "720p" → 720
 		h := quality
 		h = strings.TrimSuffix(h, "p60")
 		h = strings.TrimSuffix(h, "p")
-		return fmt.Sprintf("bestvideo[height<=%s][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[height<=%s][vcodec^=h264]+bestaudio/bestvideo[height<=%s]+bestaudio/best", h, h, h)
+		return fmt.Sprintf("bestvideo[res<=%s][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[res<=%s][vcodec^=h264]+bestaudio/bestvideo[res<=%s]+bestaudio/best", h, h, h)
 	}
 }
 
