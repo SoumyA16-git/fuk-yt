@@ -251,6 +251,7 @@ type DownloadOptions struct {
 	ForceKeyframesAtCuts bool
 	RetainTimestamps     bool
 	Cookies              []Cookie
+	UseAndroidVR         bool // If true, sets --extractor-args youtube:player_client=android_vr
 }
 
 // Download runs yt-dlp and streams progress events via callback.
@@ -271,8 +272,11 @@ func (s *Service) Download(
 		"--fragment-retries", "10",
 		"--file-access-retries", "10",
 		"-o", opts.OutputPath,
+	}
+
+	if opts.UseAndroidVR {
 		// android_vr: stable client with full 144p-1080p format access without PO tokens
-		"--extractor-args", "youtube:player_client=android_vr",
+		args = append(args, "--extractor-args", "youtube:player_client=android_vr")
 	}
 
 	vid := extractVideoID(url)

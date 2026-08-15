@@ -13,9 +13,9 @@ import (
 
 func main() {
 	cwd, _ := os.Getwd()
-	ytdlpPath := cwd + "/../bin/yt-dlp.exe"
-	ffmpegPath := cwd + "/../bin/ffmpeg.exe"
-	ffprobePath := cwd + "/../bin/ffprobe.exe"
+	ytdlpPath := cwd + "/bin/bin/yt-dlp.exe"
+	ffmpegPath := cwd + "/bin/bin/ffmpeg.exe"
+	ffprobePath := cwd + "/bin/bin/ffprobe.exe"
 	storageDir := cwd + "/test_downloads"
 
 	filesSvc := files.New(storageDir)
@@ -28,7 +28,7 @@ func main() {
 	}
 
 	fmt.Println("--- Testing Clip Audio ---")
-	audioPath, err := downSvc.DownloadClip(context.Background(), "jNQXAC9IVRw", "Me at the zoo", 5, 10, "audio", "best", "mp3", "job1", progressFn, nil)
+	audioPath, err := downSvc.DownloadClip(context.Background(), "ThV--QRKHPk", "Test Sync Audio", 137.350, 261.780, "audio", "best", "mp3", "job1", progressFn, nil)
 	if err != nil {
 		fmt.Println("Clip Audio Error:", err)
 	} else {
@@ -36,7 +36,7 @@ func main() {
 	}
 
 	fmt.Println("\n--- Testing Clip Video ---")
-	videoPath, err := downSvc.DownloadClip(context.Background(), "jNQXAC9IVRw", "Me at the zoo", 5, 10, "video", "best", "mp4", "job2", progressFn, nil)
+	videoPath, err := downSvc.DownloadClip(context.Background(), "ThV--QRKHPk", "Test Sync", 137.350, 261.780, "video", "best", "mp4", "job2", progressFn, nil)
 	if err != nil {
 		fmt.Println("Clip Video Error:", err)
 	} else {

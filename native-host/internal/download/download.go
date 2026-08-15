@@ -63,10 +63,11 @@ func (s *Service) DownloadVideo(ctx context.Context, videoID, quality, format, j
 	outputTemplate := tempPath
 
 	opts := ytdlp.DownloadOptions{
-		FormatID:    formatStr,
-		MergeFormat: mergeExt,
-		OutputPath:  outputTemplate,
-		Cookies:     cookies,
+		FormatID:     formatStr,
+		MergeFormat:  mergeExt,
+		OutputPath:   outputTemplate,
+		Cookies:      cookies,
+		UseAndroidVR: true,
 	}
 
 	if err := s.files.EnsureDir(files.JobTypeVideo); err != nil {
@@ -113,6 +114,7 @@ func (s *Service) DownloadAudio(ctx context.Context, videoID, audioFormat, quali
 		AudioQuality: bitrateToYtdlp(quality),
 		OutputPath:   tempPath,
 		Cookies:      cookies,
+		UseAndroidVR: true,
 	}
 
 	if err := s.files.EnsureDir(files.JobTypeAudio); err != nil {
@@ -192,6 +194,7 @@ func (s *Service) DownloadClip(ctx context.Context, videoID, title string, start
 			ForceKeyframesAtCuts: false,
 			RetainTimestamps:     false,
 			Cookies:              cookies,
+			UseAndroidVR:         false, // Explicitly false for Clip primary attempt
 		}
 		if ext == "mp3" {
 			opts.ExtractAudio = true
@@ -209,6 +212,7 @@ func (s *Service) DownloadClip(ctx context.Context, videoID, title string, start
 			ForceKeyframesAtCuts: false,
 			RetainTimestamps:     false,
 			Cookies:              cookies,
+			UseAndroidVR:         false, // Explicitly false for Clip primary attempt
 		}
 	}
 	
@@ -229,7 +233,36 @@ func (s *Service) DownloadClip(ctx context.Context, videoID, title string, start
 	logging.Info(fmt.Sprintf("[CLIP] yt-dlp completed: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
 	
 	if err != nil {
-		// Attempt cleanup
+		errStr := strings.ToLower(err.Error())
+		isClientError := strings.Contains(errStr, "403") || strings.Contains(errStr, "forbidden") || strings.Contains(errStr, "token") || strings.Contains(errStr, "sign") || strings.Contains(errStr, "auth") || strings.Contains(errStr, "client") || strings.Contains(errStr, "exited with code")
+		
+		if isClientError {
+			logging.Info("[CLIP] player client mode = android_vr fallback", map[string]interface{}{"reason": err.Error()})
+			
+			// Clean up failed parts before retry
+			matches, _ := filepath.Glob(tempPathBase + ".*")
+			for _, m := range matches {
+				_ = os.Remove(m)
+			}
+			
+			opts.UseAndroidVR = true
+			var fallbackProgress sync.Once
+			
+			err = s.ytdlp.Download(ctx, url, opts, jobID, func(p ytdlp.ProgressEvent) {
+				fallbackProgress.Do(func() {
+					logging.Info("[CLIP] first progress (fallback)", nil)
+				})
+				scaledPct := 5.0 + (p.Percent * 0.95)
+				progressFn(scaledPct, p.SpeedBps, p.ETASec, p.Downloaded, p.Total)
+			})
+			logging.Info(fmt.Sprintf("[CLIP] yt-dlp fallback completed: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
+		} else {
+			logging.Info("[CLIP] player client mode = default (failed, no fallback)", map[string]interface{}{"reason": err.Error()})
+		}
+	}
+	
+	if err != nil {
+		// Final cleanup if still failing
 		matches, _ := filepath.Glob(tempPathBase + ".*")
 		for _, m := range matches {
 			_ = os.Remove(m)
