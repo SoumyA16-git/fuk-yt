@@ -215,7 +215,6 @@ func run(cfg *Config) error {
 	// Clean leftover update binaries/scripts
 	if exePath, err := os.Executable(); err == nil {
 		_ = os.Remove(exePath + ".old")
-		_ = os.Remove(filepath.Join(filepath.Dir(exePath), "updater.bat"))
 	}
 
 	// Migrate any previous files from staging directory to user's real Downloads folder
