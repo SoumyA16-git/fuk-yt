@@ -192,7 +192,7 @@ func (s *Service) DownloadClip(ctx context.Context, videoID, title string, start
 			OutputPath:           outputPathTmpl,
 			SectionSpec:          sectionSpec,
 			ForceKeyframesAtCuts: false,
-			RetainTimestamps:     false,
+			RetainTimestamps:     true, // Preserve relative A/V offset using copyts+make_zero
 			Cookies:              cookies,
 			UseAndroidVR:         false, // Explicitly false for Clip primary attempt
 		}
@@ -210,7 +210,7 @@ func (s *Service) DownloadClip(ctx context.Context, videoID, title string, start
 			OutputPath:           outputPathTmpl,
 			SectionSpec:          sectionSpec,
 			ForceKeyframesAtCuts: false,
-			RetainTimestamps:     false,
+			RetainTimestamps:     true, // Preserve relative A/V offset using copyts+make_zero
 			Cookies:              cookies,
 			UseAndroidVR:         false, // Explicitly false for Clip primary attempt
 		}

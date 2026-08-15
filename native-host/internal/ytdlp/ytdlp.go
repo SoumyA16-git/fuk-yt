@@ -331,7 +331,8 @@ func (s *Service) Download(
 			args = append(args, "--downloader-args", "ffmpeg:-preset ultrafast")
 		} else if opts.RetainTimestamps {
 			// Fast fetch using -c copy without keyframe forcing, but retain original timestamps
-			args = append(args, "--downloader-args", "ffmpeg:-copyts")
+			// -avoid_negative_ts make_zero ensures the relative A/V offset is preserved while shifting the earliest stream to 0.
+			args = append(args, "--downloader-args", "ffmpeg:-copyts -avoid_negative_ts make_zero")
 		}
 	}
 
