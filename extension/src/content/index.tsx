@@ -183,7 +183,27 @@ function injectShortsButton(actionsContainer: Element, renderer: Element) {
   
   console.log('[FUK-YT] Injected Shorts Download Button directly into actions container:', actionsContainer);
   
-  const root = createRoot(wrapper);
+  // Attach Shadow DOM so Tailwind classes work!
+  const shadow = wrapper.attachShadow({ mode: 'closed' });
+  try {
+    const styleLink = document.createElement('link');
+    styleLink.rel = 'stylesheet';
+    styleLink.href = chrome.runtime.getURL('popup.css');
+    shadow.appendChild(styleLink);
+  } catch (e) {
+    console.error('[FUK-YT] Failed to inject styles into Shorts button shadow DOM', e);
+  }
+
+  const mountPoint = document.createElement('div');
+  // Fill the wrapper
+  mountPoint.style.width = '100%';
+  mountPoint.style.height = '100%';
+  mountPoint.style.display = 'flex';
+  mountPoint.style.justifyContent = 'center';
+  mountPoint.style.alignItems = 'center';
+  shadow.appendChild(mountPoint);
+  
+  const root = createRoot(mountPoint);
   root.render(
     <ShortsDownloadButton 
       videoIdResolver={() => {
