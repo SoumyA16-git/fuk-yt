@@ -301,6 +301,10 @@ func (s *Service) Download(
 		}
 	}
 
+	if opts.FormatID != "" {
+		args = append(args, "-f", opts.FormatID)
+	}
+	
 	if opts.ExtractAudio {
 		args = append(args, "-x")
 		if opts.AudioFormat != "" {
@@ -310,9 +314,6 @@ func (s *Service) Download(
 			args = append(args, "--audio-quality", opts.AudioQuality)
 		}
 	} else {
-		if opts.FormatID != "" {
-			args = append(args, "-f", opts.FormatID)
-		}
 		if opts.MergeFormat != "" {
 			args = append(args, "--merge-output-format", opts.MergeFormat)
 		}
@@ -331,6 +332,13 @@ func (s *Service) Download(
 	}
 
 	args = append(args, url)
+
+	// Log effective arguments safely (excluding the URL to redact signed tokens if any)
+	safeArgs := args
+	if len(args) > 0 {
+		safeArgs = args[:len(args)-1]
+	}
+	logging.Info("[YTDLP] executing yt-dlp", map[string]interface{}{"args": safeArgs})
 
 	cmd := exec.CommandContext(ctx, s.binaryPath, args...) // SEC-05: array, no shell
 

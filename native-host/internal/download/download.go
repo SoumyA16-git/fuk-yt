@@ -156,7 +156,6 @@ func (s *Service) DownloadClip(ctx context.Context, videoID, title string, start
 	finalTitle := fmt.Sprintf("%s [Clip %s]", baseTitle, tag)
 
 	sectionSpec := fmt.Sprintf("*%s-%s", formatSeconds(startSec), formatSeconds(endSec))
-	clipDuration := endSec - startSec
 
 	var ext string
 	if outputType == "audio" {
@@ -171,142 +170,104 @@ func (s *Service) DownloadClip(ctx context.Context, videoID, title string, start
 		}
 	}
 
-	tempPath := s.files.TempPath("." + ext)
+	tempPathBase := s.files.TempPath("") // Without extension
+	outputPathTmpl := tempPathBase + ".%(ext)s"
+    
 	jobType := files.JobTypeClip
 	if err := s.files.EnsureDir(jobType); err != nil {
 		return "", fmt.Errorf("DISK_FULL: %w", err)
 	}
 
-	// Unified progress wrapper
-	// Stage 1 (yt-dlp): 5% -> 85%
-	// Stage 2 (ffmpeg): 85% -> 100%
+	// Progress Wrapper: 5% to 100%
 	progressFn(5.0, nil, nil, nil, nil)
 	
-	ffmpegProgressFn := func(sec float64) {
-		pct := 85.0 + (sec/clipDuration)*14.0
-		if pct > 99.0 {
-			pct = 99.0
-		}
-		progressFn(pct, nil, nil, nil, nil)
-	}
-
 	logging.Info(fmt.Sprintf("[CLIP] preparation complete: %d ms", time.Since(startT).Milliseconds()), nil)
 
-	var stage1Path string
-
+	var opts ytdlp.DownloadOptions
 	if outputType == "audio" {
-		stage1Path = tempPath + ".stage1." + ext
-		opts := ytdlp.DownloadOptions{
-			ExtractAudio:         false, // DO NOT extract audio post-download, download audio directly!
+		opts = ytdlp.DownloadOptions{
 			FormatID:             "bestaudio/best",
-			MergeFormat:          "",
-			OutputPath:           stage1Path,
+			OutputPath:           outputPathTmpl,
 			SectionSpec:          sectionSpec,
 			ForceKeyframesAtCuts: false,
-			RetainTimestamps:     true,
+			RetainTimestamps:     false,
 			Cookies:              cookies,
 		}
-		
-		ytdlpStart := time.Now()
-		logging.Info("[CLIP] yt-dlp start", nil)
-		var firstProgress sync.Once
-		
-		err := s.ytdlp.Download(ctx, url, opts, jobID, func(p ytdlp.ProgressEvent) {
-			firstProgress.Do(func() {
-				logging.Info(fmt.Sprintf("[CLIP] first download progress: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
-			})
-			scaledPct := 5.0 + (p.Percent * 0.80)
-			progressFn(scaledPct, p.SpeedBps, p.ETASec, p.Downloaded, p.Total)
-		})
-		if err != nil {
-			_ = os.Remove(stage1Path)
-			return "", mapDownloadError(err)
+		if ext == "mp3" {
+			opts.ExtractAudio = true
+			opts.AudioFormat = "mp3"
+		} else {
+			opts.ExtractAudio = false
 		}
-		logging.Info(fmt.Sprintf("[CLIP] yt-dlp complete: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
-
-		progressFn(85.0, nil, nil, nil, nil)
-
-		ffmpegStart := time.Now()
-		logging.Info("[CLIP] ffmpeg start", nil)
-		
-		// Stage B: Exact Boundary Correction (Stream copy for speed)
-		args := []string{
-			"-y",
-			"-i", stage1Path,
-			"-ss", fmt.Sprintf("%.3f", startSec),
-			"-to", fmt.Sprintf("%.3f", endSec),
-			"-c:a", "copy",
-			tempPath,
-		}
-		err = s.ffmpeg.RunProgress(ctx, jobID, ffmpegProgressFn, args...)
-		_ = os.Remove(stage1Path)
-		if err != nil {
-			_ = os.Remove(tempPath)
-			return "", fmt.Errorf("FFMPEG_FAILED")
-		}
-		logging.Info(fmt.Sprintf("[CLIP] ffmpeg complete: %d ms", time.Since(ffmpegStart).Milliseconds()), nil)
-
 	} else {
 		formatStr := buildVideoFormatStr(quality, ext)
-		stage1Path = tempPath + ".stage1.mp4"
-		opts := ytdlp.DownloadOptions{
+		opts = ytdlp.DownloadOptions{
 			FormatID:             formatStr,
 			MergeFormat:          ext,
-			OutputPath:           stage1Path,
+			OutputPath:           outputPathTmpl,
 			SectionSpec:          sectionSpec,
 			ForceKeyframesAtCuts: false,
-			RetainTimestamps:     true,
+			RetainTimestamps:     false,
 			Cookies:              cookies,
 		}
-		
-		ytdlpStart := time.Now()
-		logging.Info("[CLIP] yt-dlp start", nil)
-		var firstProgress sync.Once
-		
-		err := s.ytdlp.Download(ctx, url, opts, jobID, func(p ytdlp.ProgressEvent) {
-			firstProgress.Do(func() {
-				logging.Info(fmt.Sprintf("[CLIP] first download progress: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
-			})
-			scaledPct := 5.0 + (p.Percent * 0.80)
-			progressFn(scaledPct, p.SpeedBps, p.ETASec, p.Downloaded, p.Total)
-		})
-		if err != nil {
-			_ = os.Remove(stage1Path)
-			return "", mapDownloadError(err)
-		}
-		logging.Info(fmt.Sprintf("[CLIP] yt-dlp complete: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
-
-		progressFn(85.0, nil, nil, nil, nil)
-
-		ffmpegStart := time.Now()
-		logging.Info("[CLIP] ffmpeg start", nil)
-		
-		// Stage B: Exact Boundary Correction (Stream copy for speed)
-		args := []string{
-			"-y",
-			"-i", stage1Path,
-			"-ss", fmt.Sprintf("%.3f", startSec),
-			"-to", fmt.Sprintf("%.3f", endSec),
-			"-c", "copy",
-			tempPath,
-		}
-		err = s.ffmpeg.RunProgress(ctx, jobID, ffmpegProgressFn, args...)
-		_ = os.Remove(stage1Path)
-		if err != nil {
-			_ = os.Remove(tempPath)
-			return "", fmt.Errorf("FFMPEG_FAILED")
-		}
-		logging.Info(fmt.Sprintf("[CLIP] ffmpeg complete: %d ms", time.Since(ffmpegStart).Milliseconds()), nil)
 	}
-
-	progressFn(99.0, nil, nil, nil, nil)
 	
-	finalPath, err := s.atomicMoveWithTitle(tempPath, jobType, finalTitle)
+	ytdlpStart := time.Now()
+	logging.Info("[CLIP] yt-dlp command constructed", map[string]interface{}{"sectionSpec": sectionSpec, "format": ext})
+	logging.Info("[CLIP] yt-dlp process started", nil)
+	
+	var firstProgress sync.Once
+	
+	err := s.ytdlp.Download(ctx, url, opts, jobID, func(p ytdlp.ProgressEvent) {
+		firstProgress.Do(func() {
+			logging.Info(fmt.Sprintf("[CLIP] first progress: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
+		})
+		scaledPct := 5.0 + (p.Percent * 0.95)
+		progressFn(scaledPct, p.SpeedBps, p.ETASec, p.Downloaded, p.Total)
+	})
+	
+	logging.Info(fmt.Sprintf("[CLIP] yt-dlp completed: %d ms", time.Since(ytdlpStart).Milliseconds()), nil)
+	
+	if err != nil {
+		// Attempt cleanup
+		matches, _ := filepath.Glob(tempPathBase + ".*")
+		for _, m := range matches {
+			_ = os.Remove(m)
+		}
+		return "", mapDownloadError(err)
+	}
+	
+	// Determine the actual output file created by yt-dlp
+	matches, _ := filepath.Glob(tempPathBase + ".*")
+	if len(matches) == 0 {
+		return "", fmt.Errorf("CLIP_FAILED_NO_OUTPUT")
+	}
+	
+	// yt-dlp might leave intermediate files if post-processing failed, usually the final one is what we want.
+	// But we expect exactly one final file. Let's just find the one with the requested extension if possible.
+	actualOutputPath := matches[0]
+	for _, m := range matches {
+		if strings.HasSuffix(m, "."+ext) {
+			actualOutputPath = m
+			break
+		}
+	}
+	
+	logging.Info("[CLIP] final file ready", map[string]interface{}{"path": actualOutputPath})
+
+	finalPath, err := s.atomicMoveWithTitle(actualOutputPath, jobType, finalTitle)
 	if err != nil {
 		return "", err
 	}
 	
-	logging.Info(fmt.Sprintf("[CLIP] total: %d ms", time.Since(startT).Milliseconds()), nil)
+	// Cleanup any remaining intermediate files from temp
+	for _, m := range matches {
+		if m != actualOutputPath {
+			_ = os.Remove(m)
+		}
+	}
+	
+	logging.Info(fmt.Sprintf("[CLIP] total duration: %d ms", time.Since(startT).Milliseconds()), nil)
 	progressFn(100.0, nil, nil, nil, nil)
 	return finalPath, nil
 }
