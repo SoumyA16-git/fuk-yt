@@ -30,19 +30,28 @@ function buildQualityGroups(formats: FormatInfo[]): VideoQualityGroup[] {
   const heightMap = new Map<string, VideoQualityGroup>();
 
   for (const f of videoFormats) {
-    if (!f.height) continue;
+    if (!f.width && !f.height) continue;
+    // For vertical videos, use the width as the height equivalent (e.g. 1080x1920 -> 1080p)
+    const effectiveHeight = (f.width && f.height && f.width < f.height) ? f.width : (f.height || f.width);
+    if (!effectiveHeight) continue;
+
     const fps60 = (f.fps ?? 0) >= 50;
-    const label = `${f.height}p${fps60 ? '60' : ''}` as QualityLabel;
+    const label = `${effectiveHeight}p${fps60 ? '60' : ''}` as QualityLabel;
 
     if (!heightMap.has(label)) {
-      heightMap.set(label, { label, height: f.height, fps60, formats: [], audioFormats });
+      heightMap.set(label, { label, height: effectiveHeight, fps60, formats: [], audioFormats });
     }
     heightMap.get(label)!.formats.push(f);
   }
 
-  return QUALITY_LABEL_ORDER
-    .filter((l) => l !== 'Best' && heightMap.has(l))
-    .map((l) => heightMap.get(l)!);
+  // Find valid labels that exist in our defined order
+  const result: VideoQualityGroup[] = [];
+  for (const l of QUALITY_LABEL_ORDER) {
+    if (l !== 'Best' && heightMap.has(l)) {
+      result.push(heightMap.get(l)!);
+    }
+  }
+  return result;
 }
 
 function formatFilesize(bytes?: number): string | null {

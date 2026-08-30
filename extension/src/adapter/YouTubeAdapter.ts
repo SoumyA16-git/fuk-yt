@@ -10,7 +10,7 @@
 
 /** Returns true if the URL is a supported YouTube watch or Shorts page */
 export function isWatchPage(url: string): boolean {
-  return /youtube\.com\/(watch(\?v=|\/)|shorts\/[^?#/]+)/.test(url);
+  return /youtube\.com\/(watch(\?v=|\/)|shorts\/[^?#/]+|live\/[^?#/]+)/.test(url);
 }
 
 /** Returns true if this is a Shorts page */
@@ -31,6 +31,10 @@ export function extractVideoId(url: string): string | null {
   // /shorts/<id>
   const shortsMatch = url.match(/\/shorts\/([^?#/]+)/);
   if (shortsMatch) return shortsMatch[1];
+
+  // /live/<id>
+  const liveMatch = url.match(/\/live\/([^?#/]+)/);
+  if (liveMatch) return liveMatch[1];
 
   return null;
 }

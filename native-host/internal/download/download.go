@@ -67,7 +67,6 @@ func (s *Service) DownloadVideo(ctx context.Context, videoID, quality, format, j
 		MergeFormat:  mergeExt,
 		OutputPath:   outputTemplate,
 		Cookies:      cookies,
-		UseAndroidVR: true,
 	}
 
 	if err := s.files.EnsureDir(files.JobTypeVideo); err != nil {
@@ -114,7 +113,6 @@ func (s *Service) DownloadAudio(ctx context.Context, videoID, audioFormat, quali
 		AudioQuality: bitrateToYtdlp(quality),
 		OutputPath:   tempPath,
 		Cookies:      cookies,
-		UseAndroidVR: true,
 	}
 
 	if err := s.files.EnsureDir(files.JobTypeAudio); err != nil {
